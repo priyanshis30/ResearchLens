@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResearchLens — Gap Analysis Suite</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --ink: #0d0c0b;
+  --paper: #f6f4ef;
+  --cream: #eceae3;
+  --rule: #d8d3c8;
+  --accent: #2250e8;
+  --accent-dim: #eaefff;
+  --accent-hover: #1a3fcc;
+  --red: #b83232;
+  --red-bg: #fdf0f0;
+  --orange: #d4620e;
+  --orange-bg: #fef3ea;
+  --green: #1f8a4a;
+  --green-bg: #edf7f2;
+  --purple: #6b3ccc;
+  --purple-bg: #f3eeff;
+  --muted: #706b64;
+  --muted-light: #a09890;
+  --white: #ffffff;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 14px rgba(0,0,0,0.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+
+/* ── API KEY BANNER ── */
+.apikey-banner {
+  background: #1a1714; color: var(--white);
+  padding: 10px 40px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;
+}
+.apikey-banner label { opacity: 0.6; white-space: nowrap; font-size: 12px; }
+.apikey-input {
+  flex: 1; min-width: 180px; max-width: 340px;
+  background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.2);
+  color: var(--white); padding: 6px 11px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.04em;
+}
+.apikey-input::placeholder { opacity: 0.35; }
+.apikey-input:focus { outline: none; border-color: rgba(255,255,255,0.55); }
+.apikey-save-btn {
+  background: var(--accent); color: var(--white); border: none;
+  padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; transition: opacity 0.15s;
+}
+.apikey-save-btn:hover { opacity: 0.85; }
+.apikey-status { font-size: 11px; opacity: 0.55; white-space: nowrap; }
+.apikey-status.ok { color: #5ee87a; opacity: 1; }
+.apikey-link { color: rgba(255,255,255,0.45); font-size: 11px; text-decoration: underline; white-space: nowrap; margin-left: auto; }
+.apikey-link:hover { color: white; }
+
+/* ── HEADER ── */
+header {
+  background: var(--ink); color: var(--white);
+  padding: 0 40px; display: flex; align-items: center; justify-content: space-between; height: 52px;
+  position: sticky; top: 0; z-index: 200;
+}
+.logo { font-family: 'DM Serif Display', serif; font-size: 20px; letter-spacing: -0.3px; display: flex; align-items: center; gap: 9px; }
+.logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.header-tag { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.4; }
+
+/* ── TOP NAV ── */
+.top-nav {
+  background: var(--white); border-bottom: 1px solid var(--rule);
+  padding: 0 40px; display: flex; gap: 0; overflow-x: auto;
+  position: sticky; top: 52px; z-index: 190;
+}
+.top-tab {
+  background: none; border: none; border-bottom: 3px solid transparent;
+  padding: 13px 18px 10px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+  color: var(--muted); cursor: pointer; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px; transition: color 0.15s, border-color 0.15s;
+}
+.top-tab:hover { color: var(--ink); }
+.top-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.top-tab .badge {
+  background: var(--accent-dim); color: var(--accent); font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 20px; display: none;
+}
+.top-tab .badge.show { display: inline; }
+
+/* ── PANELS ── */
+.panel { display: none; max-width: 1080px; margin: 0 auto; padding: 36px 40px 80px; }
+.panel.active { display: block; }
+
+/* ── UPLOAD ── */
+.upload-zone {
+  border: 2px dashed var(--rule); border-radius: 6px; background: var(--white);
+  padding: 50px 32px; text-align: center; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s; margin-bottom: 16px; position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { width: 42px; height: 42px; margin: 0 auto 12px; color: var(--muted); }
+.upload-zone h2 { font-family: 'DM Serif Display', serif; font-size: 21px; margin-bottom: 6px; }
+.upload-zone p { color: var(--muted); font-size: 13px; }
+
+.file-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.file-item {
+  display: flex; align-items: center; gap: 10px; background: var(--white);
+  border: 1px solid var(--rule); border-radius: 5px; padding: 9px 13px; font-size: 13px;
+}
+.file-item .fn { flex: 1; font-weight: 500; }
+.file-item .fs { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.rm-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 17px; line-height: 1; padding: 2px 4px; border-radius: 3px; transition: color 0.15s, background 0.15s; }
+.rm-btn:hover { color: var(--red); background: var(--red-bg); }
+
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 9px 20px; border-radius: 4px;
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+  transition: background 0.15s, opacity 0.15s; letter-spacing: 0.01em;
+}
+.btn:disabled { opacity: 0.38; cursor: not-allowed; }
+.btn-ink { background: var(--ink); color: var(--white); }
+.btn-ink:hover:not(:disabled) { background: var(--accent); }
+.btn-ghost { background: var(--white); color: var(--ink); border: 1px solid var(--rule); font-weight: 500; }
+.btn-ghost:hover:not(:disabled) { background: var(--cream); border-color: var(--ink); }
+.btn-blue { background: var(--accent); color: var(--white); }
+.btn-blue:hover:not(:disabled) { background: var(--accent-hover); }
+.sel { border: 1px solid var(--rule); background: var(--white); padding: 9px 13px; font-family: 'Inter', sans-serif; font-size: 13px; border-radius: 4px; color: var(--ink); cursor: pointer; }
+
+/* ── LOADING ── */
+.load-wrap { display: none; margin-bottom: 24px; }
+.load-wrap.on { display: block; }
+.lbar { height: 3px; background: var(--accent-dim); border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+.lbar-fill { height: 100%; background: var(--accent); border-radius: 2px; animation: bar 1.6s ease-in-out infinite; width: 55%; transform-origin: left; }
+@keyframes bar { 0%{transform:translateX(-120%)} 100%{transform:translateX(320%)} }
+.lsteps { display: flex; flex-direction: column; gap: 4px; }
+.lstep { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); padding: 6px 0; }
+.ldot { width: 8px; height: 8px; border-radius: 50%; background: var(--rule); flex-shrink: 0; transition: background 0.3s; }
+.ldot.done { background: var(--green); }
+.ldot.go { background: var(--accent); animation: dp 1s ease-in-out infinite; }
+@keyframes dp { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.7} }
+
+/* ── ERROR ── */
+.err { background: var(--red-bg); border: 1px solid #f0c0c0; border-radius: 4px; padding: 13px 17px; color: var(--red); font-size: 13px; margin-bottom: 20px; display: none; }
+.err.on { display: block; }
+
+/* ── SECTION HEADER ── */
+.shd { display: flex; align-items: baseline; justify-content: space-between; border-top: 2px solid var(--ink); padding-top: 26px; margin-bottom: 22px; flex-wrap: wrap; gap: 10px; }
+.shd h2 { font-family: 'DM Serif Display', serif; font-size: 26px; }
+.stag { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.07em; }
+
+/* ── SUMMARY ── */
+.sum-hero {
+  background: var(--ink); color: var(--white); border-radius: 6px; padding: 28px 32px; margin-bottom: 22px;
+}
+.sum-hero .slbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.45; margin-bottom: 8px; }
+.sum-hero .stitle { font-family: 'DM Serif Display', serif; font-size: 19px; margin-bottom: 10px; }
+.sum-hero .stext { font-size: 14px; line-height: 1.8; opacity: 0.86; }
+.sum-hero .stitles { margin-top: 14px; font-size: 11px; opacity: 0.38; font-family: 'JetBrains Mono', monospace; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
+.stats-row { display: flex; gap: 22px; margin-top: 18px; flex-wrap: wrap; }
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat .n { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1; }
+.stat .l { font-size: 10px; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.sum-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.scard { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 20px 22px; box-shadow: var(--shadow); }
+.scard .slbl2 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
+.bullet-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.bullet-list li { display: flex; gap: 8px; font-size: 13px; line-height: 1.6; }
+.bullet-list li::before { content: '✓'; color: var(--green); flex-shrink: 0; margin-top: 1px; }
+
+/* ── GAPS ── */
+.gaps-grid { display: grid; gap: 14px; }
+.gap-card { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 22px 26px; border-left: 4px solid var(--rule); box-shadow: var(--shadow); }
+.gap-card.hi { border-left-color: var(--red); }
+.gap-card.md { border-left-color: var(--orange); }
+.gap-card.lo { border-left-color: var(--green); }
+.gh { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.gnum { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; color: var(--muted); background: var(--cream); padding: 3px 6px; border-radius: 3px; white-space: nowrap; margin-top: 3px; flex-shrink: 0; }
+.gtitle { font-family: 'DM Serif Display', serif; font-size: 17px; flex: 1; line-height: 1.3; }
+.sbadge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.hi .sbadge { background: var(--red-bg); color: var(--red); }
+.md .sbadge { background: var(--orange-bg); color: var(--orange); }
+.lo .sbadge { background: var(--green-bg); color: var(--green); }
+.tbadge { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; padding: 3px 8px; border-radius: 20px; background: var(--purple-bg); color: var(--purple); white-space: nowrap; flex-shrink: 0; }
+.gdesc { font-size: 13px; line-height: 1.75; color: #3a3530; margin-bottom: 12px; }
+.gmeta { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: flex-start; }
+.gmeta span:first-child { color: var(--accent); font-weight: 600; flex-shrink: 0; }
+
+/* ── FUTURE WORK ── */
+.fw-list { display: flex; flex-direction: column; gap: 10px; }
+.fw-item { display: flex; gap: 14px; background: var(--white); border: 1px solid var(--rule); border-radius: 5px; padding: 14px 18px; box-shadow: var(--shadow); }
+.fw-arrow { color: var(--accent); font-weight: 700; font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.fw-body { flex: 1; }
+.fw-text { font-size: 13px; line-height: 1.7; margin-bottom: 6px; }
+.fw-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.fw-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.07em; }
+.fw-short { background: var(--green-bg); color: var(--green); }
+.fw-mid { background: var(--orange-bg); color: var(--orange); }
+.fw-long { background: var(--purple-bg); color: var(--purple); }
+.fw-explicit { background: var(--accent-dim); color: var(--accent); }
+.fw-inferred { background: var(--cream); color: var(--muted); }
+
+/* ── RESEARCH QUESTIONS ── */
+.rq-grid { display: grid; gap: 12px; }
+.rq-card { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; box-shadow: var(--shadow); display: flex; gap: 14px; }
+.rqi { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--accent); opacity: 0.22; flex-shrink: 0; line-height: 1; margin-top: 2px; min-width: 28px; }
+.rqc { flex: 1; }
+.rqq { font-size: 14px; font-weight: 600; line-height: 1.5; margin-bottom: 5px; }
+.rqr { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.rqd { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
+.diff-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--cream); text-transform: uppercase; letter-spacing: 0.07em; }
+.rqlink { font-size: 11px; color: var(--purple); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ── HEATMAP ── */
+.hm-wrap { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 28px 32px; box-shadow: var(--shadow); }
+.hm-wrap h3 { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 6px; }
+.hm-sub { font-size: 12px; color: var(--muted); margin-bottom: 22px; line-height: 1.6; }
+.hm-grid { display: grid; grid-template-columns: 150px 1fr; gap: 0; }
+.hm-ch { display: grid; gap: 4px; margin-bottom: 4px; }
+.hm-chl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); text-align: center; padding: 3px 2px; }
+.hm-rl { font-size: 12px; font-weight: 500; color: var(--ink); display: flex; align-items: center; padding-right: 12px; min-height: 40px; }
+.hm-cells { display: grid; gap: 4px; }
+.hm-cell { height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; cursor: default; transition: transform 0.1s; }
+.hm-cell:hover { transform: scale(1.07); z-index: 5; position: relative; }
+.hm-cell[data-s="0"] { background: #f0ede8; color: var(--muted-light); }
+.hm-cell[data-s="1"] { background: #ddeeff; color: #3a7abf; }
+.hm-cell[data-s="2"] { background: #b8d9ff; color: #2258a5; }
+.hm-cell[data-s="3"] { background: #ffd6a5; color: #9e4f00; }
+.hm-cell[data-s="4"] { background: #ffb3b3; color: #8b1a1a; }
+.hm-cell[data-s="5"] { background: #ff7070; color: #5a0000; }
+.hm-legend { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.hm-legend span { font-size: 11px; color: var(--muted); }
+.hm-bar { display: flex; gap: 3px; }
+.hm-swatch { width: 20px; height: 13px; border-radius: 2px; }
+.tooltip { position: fixed; background: var(--ink); color: var(--white); font-size: 12px; padding: 8px 12px; border-radius: 4px; pointer-events: none; display: none; z-index: 999; max-width: 240px; line-height: 1.5; white-space: pre-line; }
+
+/* ── PROPOSAL ── */
+.proposal-ctrl { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+.prop-sel { border: 1px solid var(--rule); background: var(--white); padding: 9px 13px; font-family: 'Inter', sans-serif; font-size: 13px; border-radius: 4px; color: var(--ink); cursor: pointer; flex: 1; min-width: 200px; max-width: 400px; }
+.prop-out { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 28px 32px; min-height: 200px; box-shadow: var(--shadow); }
+.prop-empty { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; font-style: italic; }
+.psec { margin-bottom: 20px; }
+.psec:last-child { margin-bottom: 0; }
+.psec-t { font-family: 'DM Serif Display', serif; font-size: 16px; margin-bottom: 8px; border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+.psec-c { font-size: 13px; line-height: 1.8; color: #3a3530; }
+.prop-loading { text-align: center; color: var(--muted); font-style: italic; font-size: 13px; padding: 40px; }
+.copy-btn { background: none; border: 1px solid var(--rule); border-radius: 3px; padding: 5px 10px; font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; transition: background 0.15s; }
+.copy-btn:hover { background: var(--cream); color: var(--ink); }
+
+/* ── OPPORTUNITIES ── */
+.opp-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 28px; }
+.opp-list li { display: flex; gap: 12px; font-size: 13px; line-height: 1.7; padding: 12px 16px; background: var(--accent-dim); border-radius: 4px; }
+.opp-list li::before { content: '→'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+/* ── RELATED PAPERS ── */
+.ss-intro { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 24px; max-width: 640px; }
+.ss-intro a { color: var(--accent); text-decoration: none; }
+.ss-intro a:hover { text-decoration: underline; }
+.ss-gap-section { margin-bottom: 36px; }
+.ss-gap-label {
+  font-family: 'DM Serif Display', serif; font-size: 16px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.ss-gap-num { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; color: var(--muted); background: var(--cream); padding: 3px 7px; border-radius: 3px; }
+.ss-loading { font-size: 12px; color: var(--muted); font-style: italic; padding: 10px 0; display: flex; align-items: center; gap: 8px; }
+.ss-spinner { width: 12px; height: 12px; border: 2px solid var(--rule); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ss-papers { display: flex; flex-direction: column; gap: 10px; }
+.ss-paper {
+  background: var(--white); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 16px 20px; box-shadow: var(--shadow); display: flex; gap: 16px; align-items: flex-start;
+}
+.ss-paper-body { flex: 1; min-width: 0; }
+.ss-paper-title {
+  font-size: 13px; font-weight: 600; line-height: 1.45; margin-bottom: 5px;
+  color: var(--ink);
+}
+.ss-paper-title a { color: var(--accent); text-decoration: none; }
+.ss-paper-title a:hover { text-decoration: underline; }
+.ss-paper-meta { font-size: 11px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.ss-paper-abstract { font-size: 12px; color: #4a4540; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ss-paper-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.ss-tag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; background: var(--cream); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.ss-tag-oa { background: var(--green-bg); color: var(--green); }
+.ss-cite { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted-light); white-space: nowrap; flex-shrink: 0; padding-top: 2px; }
+.ss-none { font-size: 13px; color: var(--muted); font-style: italic; padding: 8px 0; }
+.ss-err { font-size: 12px; color: var(--orange); background: var(--orange-bg); padding: 8px 12px; border-radius: 4px; }
+.ss-refetch-btn {
+  background: none; border: 1px solid var(--rule); border-radius: 4px;
+  padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: background 0.15s; margin-top: 8px;
+}
+.ss-refetch-btn:hover { background: var(--cream); color: var(--ink); }
+.ss-divider { border: none; border-top: 1px solid var(--rule); margin: 28px 0; }
+
+@media (max-width: 640px) {
+  .apikey-banner { padding: 10px 20px; }
+  header { padding: 0 20px; }
+  .top-nav { padding: 0 16px; }
+  .panel { padding: 24px 20px 60px; }
+  .sum-cards { grid-template-columns: 1fr; }
+  .hm-grid { grid-template-columns: 90px 1fr; }
+  .hm-rl { font-size: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="tooltip" id="tooltip"></div>
+
+<!-- API KEY BANNER -->
+<div class="apikey-banner">
+  <label for="apikeyInput">Google Gemini API Key</label>
+  <input class="apikey-input" id="apikeyInput" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false">
+  <button class="apikey-save-btn" id="apikeySaveBtn">Save for session</button>
+  <span class="apikey-status" id="apikeyStatus">Not set</span>
+  <a class="apikey-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get free key at aistudio.google.com ↗</a>
+</div>
+
+<header>
+  <div class="logo"><span class="logo-dot"></span>ResearchLens</div>
+  <span class="header-tag">Gap Analysis Suite · Gemini AI · Free</span>
+</header>
+
+<nav class="top-nav">
+  <button class="top-tab active" data-tab="upload">Upload &amp; Analyze</button>
+  <button class="top-tab" data-tab="summary">Summary <span class="badge" id="b-summary"></span></button>
+  <button class="top-tab" data-tab="gaps">Gap Detection <span class="badge" id="b-gaps"></span></button>
+  <button class="top-tab" data-tab="future">Future Work <span class="badge" id="b-future"></span></button>
+  <button class="top-tab" data-tab="questions">Research Questions <span class="badge" id="b-questions"></span></button>
+  <button class="top-tab" data-tab="heatmap">Gap Heatmap <span class="badge" id="b-heatmap"></span></button>
+  <button class="top-tab" data-tab="related">Related Papers <span class="badge" id="b-related"></span></button>
+  <button class="top-tab" data-tab="proposal">Proposal Generator <span class="badge" id="b-proposal"></span></button>
+</nav>
+
+<!-- ══ UPLOAD ══ -->
+<div class="panel active" id="panel-upload">
+  <p style="color:var(--muted);font-size:13px;margin-bottom:28px;max-width:620px;line-height:1.7">
+    Upload one or more research PDFs for a full AI-powered analysis using <strong>Google Gemini 1.5 Flash</strong> — completely free. Get your free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a> and paste it in the banner above.
+  </p>
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept=".pdf" multiple>
+    <svg class="upload-icon" viewBox="0 0 42 42" fill="none">
+      <rect x="4" y="6" width="34" height="30" rx="3" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M14 22 L21 15 L28 22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M21 15v14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <h2>Drop research PDFs here</h2>
+    <p>or click to browse — supports multiple files for cross-paper analysis</p>
+  </div>
+  <div class="file-list" id="fileList"></div>
+  <div class="controls">
+    <button class="btn btn-ink" id="analyzeBtn" disabled>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 7l1.5 1.5L9.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Run Full Analysis
+    </button>
+    <select class="sel" id="depthSelect">
+      <option value="standard">Standard (5–7 gaps)</option>
+      <option value="deep">Deep (8–12 gaps)</option>
+      <option value="quick">Quick (3–4 gaps)</option>
+    </select>
+    <button class="btn btn-ghost" id="clearBtn" disabled>Clear all</button>
+  </div>
+  <div class="err" id="errBox"></div>
+  <div class="load-wrap" id="loadWrap">
+    <div class="lbar"><div class="lbar-fill"></div></div>
+    <div class="lsteps">
+      <div class="lstep"><div class="ldot" id="d1"></div><span>Reading and parsing PDF content…</span></div>
+      <div class="lstep"><div class="ldot" id="d2"></div><span>Extracting summary, claims and methodology…</span></div>
+      <div class="lstep"><div class="ldot" id="d3"></div><span>Detecting research gaps by type and severity…</span></div>
+      <div class="lstep"><div class="ldot" id="d4"></div><span>Identifying future work directions…</span></div>
+      <div class="lstep"><div class="ldot" id="d5"></div><span>Generating research questions…</span></div>
+      <div class="lstep"><div class="ldot" id="d6"></div><span>Building heatmap and finalising…</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUMMARY ══ -->
+<div class="panel" id="panel-summary">
+  <div class="shd"><h2>Paper Summary</h2><span class="stag" id="meta-summary"></span></div>
+  <div id="summaryContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+</div>
+
+<!-- ══ GAPS ══ -->
+<div class="panel" id="panel-gaps">
+  <div class="shd"><h2>Research Gap Detection</h2><span class="stag" id="meta-gaps"></span></div>
+  <div class="gaps-grid" id="gapsGrid"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+  <ul class="opp-list" id="oppList" style="display:none"></ul>
+</div>
+
+<!-- ══ FUTURE WORK ══ -->
+<div class="panel" id="panel-future">
+  <div class="shd"><h2>Future Work Extraction</h2><span class="stag" id="meta-future"></span></div>
+  <div class="fw-list" id="fwList"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+</div>
+
+<!-- ══ RESEARCH QUESTIONS ══ -->
+<div class="panel" id="panel-questions">
+  <div class="shd"><h2>Research Question Generator</h2><span class="stag" id="meta-questions"></span></div>
+  <div class="rq-grid" id="rqGrid"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+</div>
+
+<!-- ══ HEATMAP ══ -->
+<div class="panel" id="panel-heatmap">
+  <div class="shd"><h2>Gap Intensity Heatmap</h2><span class="stag">Type × Severity Matrix</span></div>
+  <div id="heatmapContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+</div>
+
+<!-- ══ RELATED PAPERS ══ -->
+<div class="panel" id="panel-related">
+  <div class="shd"><h2>Related Papers</h2><span class="stag" id="meta-related">Via Semantic Scholar · Free · No key needed</span></div>
+  <p class="ss-intro">
+    For each detected gap, ResearchLens searches <a href="https://www.semanticscholar.org" target="_blank" rel="noopener">Semantic Scholar</a> to surface the most relevant existing literature — helping you understand what's already been done and where the white space truly lies.
+    <br><span style="opacity:0.7">Results load automatically after analysis. Click a paper title to open it on Semantic Scholar.</span>
+  </p>
+  <div id="relatedContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+</div>
+
+<!-- ══ PROPOSAL ══ -->
+<div class="panel" id="panel-proposal">
+  <div class="shd"><h2>Research Proposal Generator</h2><span class="stag">Select a gap · Choose study type · Generate</span></div>
+  <div class="proposal-ctrl" id="proposalCtrl" style="display:none">
+    <select class="prop-sel" id="propGapSel"><option value="">Select a gap…</option></select>
+    <select class="prop-sel" style="max-width:210px" id="propTypeSel">
+      <option value="experimental">Experimental study</option>
+      <option value="systematic">Systematic review</option>
+      <option value="computational">Computational / modelling</option>
+      <option value="qualitative">Qualitative study</option>
+      <option value="mixed">Mixed methods</option>
+    </select>
+    <button class="btn btn-blue" id="genPropBtn">Generate Proposal</button>
+    <button class="copy-btn" id="copyPropBtn" style="display:none">Copy text</button>
+  </div>
+  <div class="err" id="propErr"></div>
+  <div class="prop-out prop-empty" id="propOut"><span>Select a gap above and click Generate Proposal</span></div>
+</div>
+
+<script>
+// ════════════════════════════════
+// API KEY
+// ════════════════════════════════
+const apikeyInput   = document.getElementById('apikeyInput');
+const apikeySaveBtn = document.getElementById('apikeySaveBtn');
+const apikeyStatus  = document.getElementById('apikeyStatus');
+
+function getApiKey() { return sessionStorage.getItem('rg_gemini_key') || ''; }
+function refreshKeyUI(k) {
+  if (k) { apikeyStatus.textContent = '✓ Key saved'; apikeyStatus.className = 'apikey-status ok'; apikeyInput.value = k.slice(0,12) + '…'; }
+  else    { apikeyStatus.textContent = 'Not set'; apikeyStatus.className = 'apikey-status'; }
+}
+refreshKeyUI(getApiKey());
+apikeySaveBtn.addEventListener('click', () => {
+  const v = apikeyInput.value.trim();
+  if (!v || v.endsWith('…')) return;
+  sessionStorage.setItem('rg_gemini_key', v);
+  refreshKeyUI(v);
+});
+apikeyInput.addEventListener('keydown', e => { if (e.key === 'Enter') apikeySaveBtn.click(); });
+
+function getGeminiKey() {
+  const k = getApiKey();
+  if (!k) throw new Error('No API key set. Get your free Gemini key at aistudio.google.com and enter it in the banner above.');
+  return k;
+}
+
+// ════════════════════════════════
+// TABS
+// ════════════════════════════════
+document.querySelectorAll('.top-tab').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+});
+function showTab(id) {
+  document.querySelectorAll('.top-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + id));
+}
+function badge(id, val) {
+  const el = document.getElementById('b-' + id);
+  if (!el) return;
+  el.textContent = val;
+  el.classList.add('show');
+}
+
+// ════════════════════════════════
+// UPLOAD
+// ════════════════════════════════
+const uploadZone = document.getElementById('uploadZone');
+const fileInput  = document.getElementById('fileInput');
+const fileListEl = document.getElementById('fileList');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const clearBtn   = document.getElementById('clearBtn');
+const errBox     = document.getElementById('errBox');
+const loadWrap   = document.getElementById('loadWrap');
+let uploadedFiles = [], analysisData = null;
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  addFiles([...e.dataTransfer.files].filter(f => f.type === 'application/pdf'));
+});
+fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
+
+function addFiles(files) {
+  files.forEach(f => { if (!uploadedFiles.find(u => u.name === f.name)) uploadedFiles.push(f); });
+  renderFileList();
+}
+function renderFileList() {
+  fileListEl.innerHTML = '';
+  uploadedFiles.forEach((f, i) => {
+    const sz = f.size > 1024*1024 ? `${(f.size/1024/1024).toFixed(2)} MB` : `${(f.size/1024).toFixed(0)} KB`;
+    const el = document.createElement('div'); el.className = 'file-item';
+    el.innerHTML = `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="color:#b83232;flex-shrink:0"><rect x="1.5" y="1" width="10" height="13" rx="1.2" stroke="currentColor" stroke-width="1.2"/><path d="M8.5 1v4h3.5" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M4 8.5h7M4 11h5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg><span class="fn">${f.name}</span><span class="fs">${sz}</span><button class="rm-btn" data-i="${i}">×</button>`;
+    fileListEl.appendChild(el);
+  });
+  fileListEl.querySelectorAll('.rm-btn').forEach(b => b.addEventListener('click', () => { uploadedFiles.splice(+b.dataset.i, 1); renderFileList(); }));
+  analyzeBtn.disabled = uploadedFiles.length === 0;
+  clearBtn.disabled = uploadedFiles.length === 0;
+}
+clearBtn.addEventListener('click', () => { uploadedFiles = []; analysisData = null; renderFileList(); errBox.className = 'err'; });
+
+// ════════════════════════════════
+// STEP ANIMATION
+// ════════════════════════════════
+let stepTimer = null;
+function startSteps() {
+  [1,2,3,4,5,6].forEach(n => { document.getElementById('d'+n).className = 'ldot'; });
+  document.getElementById('d1').className = 'ldot go';
+  let s = 1;
+  stepTimer = setInterval(() => {
+    if (s <= 6) document.getElementById('d'+s).className = 'ldot done';
+    s++;
+    if (s <= 6) document.getElementById('d'+s).className = 'ldot go';
+    if (s > 6) clearInterval(stepTimer);
+  }, 1900);
+}
+function stopSteps() {
+  clearInterval(stepTimer);
+  [1,2,3,4,5,6].forEach(n => { document.getElementById('d'+n).className = 'ldot done'; });
+}
+
+// ════════════════════════════════
+// SYSTEM PROMPT
+// ════════════════════════════════
+function buildPrompt(depth) {
+  const d = { quick:'3–4 gaps and 4 research questions', standard:'5–7 gaps and 6 research questions', deep:'8–12 gaps and 8–10 research questions' };
+  return `You are a senior academic research analyst. Return ONLY a valid JSON object. No markdown, no code fences, no text outside the JSON.
+
+Provide ${d[depth]||d.standard}.
+
+{
+  "paperTitles": ["title"],
+  "summary": {
+    "overview": "2–3 sentence synthesis of what the paper(s) address",
+    "keyClaims": ["Claim 1", "Claim 2", "Claim 3"],
+    "methodology": "1–2 sentences on methods used",
+    "limitations": "1–2 sentences on author-acknowledged limitations",
+    "domain": "Research domain or field"
+  },
+  "gaps": [
+    {
+      "title": "Gap title",
+      "description": "2–4 sentences referencing specific paper content",
+      "severity": "high|medium|low",
+      "type": "Theoretical|Methodological|Empirical|Contextual|Interdisciplinary|Practical",
+      "suggestedApproach": "How future research could address this"
+    }
+  ],
+  "futureWork": [
+    {
+      "direction": "Specific future research direction",
+      "source": "explicit|inferred",
+      "timeframe": "short-term|medium-term|long-term"
+    }
+  ],
+  "futureOpportunities": ["Opportunity 1", "Opportunity 2", "Opportunity 3"],
+  "researchQuestions": [
+    {
+      "question": "Full specific research question",
+      "rationale": "Why this matters based on the gap",
+      "gapIndex": 0,
+      "difficulty": "feasible|challenging|ambitious"
+    }
+  ]
+}
+
+Severity: high=critical limit to understanding; medium=notable; low=refinement.
+Be specific — cite actual paper content. Make questions novel and actionable.`;
+}
+
+// ════════════════════════════════
+// ANALYZE
+// ════════════════════════════════
+function toB64(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
+}
+
+analyzeBtn.addEventListener('click', async () => {
+  errBox.className = 'err';
+  loadWrap.className = 'load-wrap on';
+  analyzeBtn.disabled = true;
+  startSteps();
+
+  const msgs = [];
+  try {
+    // Gemini: build parts array with inline_data for each PDF + text prompt
+    const parts = [];
+    for (const f of uploadedFiles) {
+      const b64 = await toB64(f);
+      parts.push({ inline_data: { mime_type: 'application/pdf', data: b64 } });
+    }
+    const label = uploadedFiles.length === 1 ? 'this research paper' : `these ${uploadedFiles.length} research papers`;
+    parts.push({ text: `${buildPrompt(document.getElementById('depthSelect').value)}\n\nAnalyze ${label} fully. Return only the JSON as specified.` });
+
+    const key = getGeminiKey();
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts }] })
+      }
+    );
+
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || `API error ${resp.status}`); }
+    const raw = await resp.json();
+    const txt = (raw.candidates?.[0]?.content?.parts?.[0]?.text || '').trim()
+      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
+    if (!txt) throw new Error('Empty response from Gemini. Try again.');
+    analysisData = JSON.parse(txt);
+
+    stopSteps();
+    renderAll(analysisData);
+    showTab('summary');
+
+  } catch(err) {
+    stopSteps();
+    errBox.textContent = `Analysis failed: ${err.message}`;
+    errBox.className = 'err on';
+  } finally {
+    loadWrap.className = 'load-wrap';
+    analyzeBtn.disabled = uploadedFiles.length === 0;
+  }
+});
+
+// ════════════════════════════════
+// RENDER ALL
+// ════════════════════════════════
+function renderAll(d) {
+  renderSummary(d);
+  renderGaps(d);
+  renderFutureWork(d);
+  renderQuestions(d);
+  renderHeatmap(d);
+  setupProposal(d);
+  // Kick off Semantic Scholar in background — no await, runs async
+  loadRelatedPapers(d.gaps, d.summary?.domain || '');
+}
+
+// ── SUMMARY ──
+function renderSummary(d) {
+  const s = d.summary || {};
+  document.getElementById('meta-summary').textContent = `${d.paperTitles?.length||1} paper(s) · ${s.domain||''}`;
+  badge('summary', '✓');
+
+  const titlesLine = d.paperTitles?.join(' · ') || '';
+  const claimsHtml = (s.keyClaims||[]).map(c=>`<li>${c}</li>`).join('');
+
+  document.getElementById('summaryContent').innerHTML = `
+    <div class="sum-hero">
+      <div class="slbl">Synthesized Overview · ${s.domain||'Research'}</div>
+      <div class="stext">${s.overview||''}</div>
+      <div class="stats-row">
+        <div class="stat"><span class="n">${d.gaps?.length||0}</span><span class="l">Gaps Found</span></div>
+        <div class="stat"><span class="n">${d.researchQuestions?.length||0}</span><span class="l">RQs Generated</span></div>
+        <div class="stat"><span class="n">${d.futureWork?.length||0}</span><span class="l">Future Directions</span></div>
+        <div class="stat"><span class="n">${(d.gaps||[]).filter(g=>g.severity==='high').length}</span><span class="l">Critical Gaps</span></div>
+      </div>
+      ${titlesLine ? `<div class="stitles">${titlesLine}</div>` : ''}
+    </div>
+    <div class="sum-cards">
+      <div class="scard">
+        <div class="slbl2">Key Claims &amp; Findings</div>
+        <ul class="bullet-list">${claimsHtml}</ul>
+      </div>
+      <div class="scard">
+        <div class="slbl2">Methodology</div>
+        <p style="font-size:13px;line-height:1.75;color:#3a3530;margin-bottom:12px">${s.methodology||'—'}</p>
+        <div class="slbl2" style="margin-top:14px">Author-Acknowledged Limitations</div>
+        <p style="font-size:13px;line-height:1.75;color:#3a3530">${s.limitations||'—'}</p>
+      </div>
+    </div>`;
+}
+
+// ── GAPS ──
+function renderGaps(d) {
+  const sevClass = {high:'hi',medium:'md',low:'lo'};
+  document.getElementById('meta-gaps').textContent = `${d.gaps.length} gaps · ${d.gaps.filter(g=>g.severity==='high').length} critical`;
+  badge('gaps', d.gaps.length);
+
+  const grid = document.getElementById('gapsGrid');
+  grid.innerHTML = '';
+  d.gaps.forEach((g,i) => {
+    const el = document.createElement('div');
+    el.className = `gap-card ${sevClass[g.severity]||'lo'}`;
+    el.innerHTML = `
+      <div class="gh">
+        <span class="gnum">GAP ${String(i+1).padStart(2,'0')}</span>
+        <h3 class="gtitle">${g.title}</h3>
+        <span class="tbadge">${g.type}</span>
+        <span class="sbadge">${g.severity}</span>
+      </div>
+      <p class="gdesc">${g.description}</p>
+      <div class="gmeta"><span>Suggested approach:</span><span>${g.suggestedApproach}</span></div>`;
+    grid.appendChild(el);
+  });
+
+  const oppList = document.getElementById('oppList');
+  if (d.futureOpportunities?.length) {
+    oppList.innerHTML = d.futureOpportunities.map(o=>`<li>${o}</li>`).join('');
+    oppList.style.display = 'flex';
+  } else { oppList.style.display = 'none'; }
+}
+
+// ── FUTURE WORK ──
+function renderFutureWork(d) {
+  const fw = d.futureWork || [];
+  document.getElementById('meta-future').textContent = `${fw.length} directions · explicit + inferred`;
+  badge('future', fw.length);
+
+  const tmap = { 'short-term':'fw-short','medium-term':'fw-mid','long-term':'fw-long' };
+  document.getElementById('fwList').innerHTML = fw.length ? fw.map(f => `
+    <div class="fw-item">
+      <div class="fw-arrow">→</div>
+      <div class="fw-body">
+        <div class="fw-text">${f.direction}</div>
+        <div class="fw-tags">
+          ${f.timeframe ? `<span class="fw-tag ${tmap[f.timeframe]||'fw-mid'}">${f.timeframe}</span>` : ''}
+          <span class="fw-tag ${f.source==='explicit'?'fw-explicit':'fw-inferred'}">${f.source==='explicit'?'From paper':'AI inferred'}</span>
+        </div>
+      </div>
+    </div>`).join('') : '<p style="color:var(--muted);font-size:13px">No future work data found.</p>';
+}
+
+// ── RESEARCH QUESTIONS ──
+function renderQuestions(d) {
+  const rqs = d.researchQuestions || [];
+  document.getElementById('meta-questions').textContent = `${rqs.length} questions generated`;
+  badge('questions', rqs.length);
+
+  const diffCol = { feasible:'var(--green)', challenging:'var(--orange)', ambitious:'var(--purple)' };
+  const grid = document.getElementById('rqGrid');
+  grid.innerHTML = '';
+  rqs.forEach((rq,i) => {
+    const el = document.createElement('div'); el.className = 'rq-card';
+    const linked = d.gaps?.[rq.gapIndex];
+    el.innerHTML = `
+      <div class="rqi">${String(i+1).padStart(2,'0')}</div>
+      <div class="rqc">
+        <div class="rqq">${rq.question}</div>
+        <div class="rqr">${rq.rationale}</div>
+        <div class="rqd">
+          ${rq.difficulty ? `<span class="diff-badge" style="color:${diffCol[rq.difficulty]||'var(--muted)'}">${rq.difficulty}</span>` : ''}
+          ${linked ? `<span class="rqlink">↳ ${linked.title}</span>` : ''}
+        </div>
+      </div>`;
+    grid.appendChild(el);
+  });
+}
+
+// ── HEATMAP ──
+function renderHeatmap(d) {
+  badge('heatmap', '✓');
+  const types = ['Theoretical','Methodological','Empirical','Contextual','Interdisciplinary','Practical'];
+  const sevs  = ['high','medium','low'];
+  const sevLbl = {high:'High',medium:'Medium',low:'Low'};
+
+  const matrix = {};
+  types.forEach(t => { matrix[t]={}; sevs.forEach(s => { matrix[t][s]=[]; }); });
+  (d.gaps||[]).forEach((g,idx) => {
+    if (matrix[g.type] && matrix[g.type][g.severity] !== undefined)
+      matrix[g.type][g.severity].push({idx,g});
+  });
+  let mx = 0;
+  types.forEach(t => sevs.forEach(s => { mx = Math.max(mx, matrix[t][s].length); }));
+
+  let html = `<div class="hm-wrap">
+    <h3>Gap Intensity Heatmap</h3>
+    <p class="hm-sub">Each cell shows the count of gaps at the intersection of gap type (rows) and severity (columns). Hover for gap titles. Darker red = higher concentration of critical gaps.</p>
+    <div class="hm-grid">
+      <div></div>
+      <div class="hm-ch" style="grid-template-columns:repeat(${sevs.length},1fr)">
+        ${sevs.map(s=>`<div class="hm-chl">${sevLbl[s]}</div>`).join('')}
+      </div>`;
+  types.forEach(t => {
+    html += `<div class="hm-rl">${t}</div><div class="hm-cells" style="grid-template-columns:repeat(${sevs.length},1fr)">`;
+    sevs.forEach(s => {
+      const items = matrix[t][s];
+      const cnt = items.length;
+      const score = mx===0 ? 0 : Math.round((cnt/Math.max(mx,1))*5);
+      const tip = cnt > 0 ? `${cnt} gap${cnt>1?'s':''}\n${items.map(it=>`#${it.idx+1}: ${it.g.title}`).join('\n')}` : '';
+      html += `<div class="hm-cell" data-s="${cnt===0?0:score}" data-tip="${tip.replace(/"/g,'&quot;')}">${cnt>0?cnt:''}</div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>
+    <div class="hm-legend">
+      <span>None</span>
+      <div class="hm-bar">
+        <div class="hm-swatch" style="background:#f0ede8"></div>
+        <div class="hm-swatch" style="background:#fde8e6"></div>
+        <div class="hm-swatch" style="background:#f5b8b3"></div>
+        <div class="hm-swatch" style="background:#e8827b"></div>
+        <div class="hm-swatch" style="background:#d04e46"></div>
+        <div class="hm-swatch" style="background:#b0302a"></div>
+      </div>
+      <span>Critical</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted-light)">Hover cells for gap titles</span>
+    </div>
+  </div>`;
+
+  document.getElementById('heatmapContent').innerHTML = html;
+
+  const tooltip = document.getElementById('tooltip');
+  document.querySelectorAll('.hm-cell').forEach(cell => {
+    cell.addEventListener('mousemove', e => {
+      const tip = cell.dataset.tip; if (!tip) return;
+      tooltip.style.display = 'block';
+      tooltip.textContent = tip;
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 10) + 'px';
+    });
+    cell.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+  });
+}
+
+// ── PROPOSAL SETUP ──
+function setupProposal(d) {
+  badge('proposal', '✓');
+  document.getElementById('proposalCtrl').style.display = 'flex';
+  const sel = document.getElementById('propGapSel');
+  sel.innerHTML = '<option value="">Select a gap…</option>';
+  d.gaps.forEach((g,i) => {
+    const o = document.createElement('option'); o.value=i; o.textContent=`GAP ${String(i+1).padStart(2,'0')} — ${g.title}`; sel.appendChild(o);
+  });
+  document.getElementById('propOut').className = 'prop-out prop-empty';
+  document.getElementById('propOut').innerHTML = '<span>Select a gap above and click Generate Proposal</span>';
+  document.getElementById('copyPropBtn').style.display = 'none';
+}
+
+// ── PROPOSAL GENERATE ──
+const genPropBtn  = document.getElementById('genPropBtn');
+const propOut     = document.getElementById('propOut');
+const propErr     = document.getElementById('propErr');
+const copyPropBtn = document.getElementById('copyPropBtn');
+
+genPropBtn.addEventListener('click', async () => {
+  if (!analysisData) return;
+  const idx = document.getElementById('propGapSel').value;
+  if (idx === '') { alert('Select a gap first.'); return; }
+  const gap = analysisData.gaps[parseInt(idx)];
+  const stype = document.getElementById('propTypeSel').value;
+
+  propErr.className = 'err';
+  propOut.className = 'prop-out';
+  propOut.innerHTML = '<div class="prop-loading">Drafting research proposal…</div>';
+  copyPropBtn.style.display = 'none';
+  genPropBtn.disabled = true;
+
+  const sysPr = `You are an expert academic research proposal writer. Return ONLY valid JSON, no markdown, no code fences.
+{
+  "title": "Proposed research title",
+  "background": "1–2 sentences of background context",
+  "objective": "1 sentence stating the precise objective",
+  "hypotheses": ["H1", "H2"],
+  "methodology": "2–3 sentences on proposed methods",
+  "expectedOutcomes": "1–2 sentences on findings and impact",
+  "timeline": "3–4 key milestones as a single string",
+  "potentialChallenges": "1–2 sentences on obstacles and mitigation"
+}`;
+
+  const userMsg = `Write a ${stype} research proposal for this gap:
+Title: ${gap.title}
+Description: ${gap.description}
+Suggested Approach: ${gap.suggestedApproach}
+Paper context: ${analysisData.summary?.overview||''}`;
+
+  try {
+    const key = getGeminiKey();
+    const prompt = `${sysPr}\n\n${userMsg}`;
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      }
+    );
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || `API error ${resp.status}`); }
+    const raw = await resp.json();
+    const txt = (raw.candidates?.[0]?.content?.parts?.[0]?.text || '').trim()
+      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
+    if (!txt) throw new Error('Empty response from Gemini.');
+    const p = JSON.parse(txt);
+    renderProposal(p, gap, parseInt(idx));
+  } catch(err) {
+    propErr.textContent = `Generation failed: ${err.message}`;
+    propErr.className = 'err on';
+    propOut.className = 'prop-out prop-empty';
+    propOut.innerHTML = '<span>Select a gap above and click Generate Proposal</span>';
+  } finally { genPropBtn.disabled = false; }
+});
+
+let lastProposalText = '';
+function renderProposal(p, gap, idx) {
+  const secs = [
+    { t: 'Proposed Title', c: `<em>${p.title}</em>` },
+    { t: 'Background', c: p.background },
+    { t: 'Objective', c: p.objective },
+    { t: 'Hypotheses', c: `<ul class="bullet-list" style="margin-top:0">${(p.hypotheses||[]).map(h=>`<li>${h}</li>`).join('')}</ul>` },
+    { t: 'Methodology', c: p.methodology },
+    { t: 'Expected Outcomes', c: p.expectedOutcomes },
+    { t: 'Timeline', c: p.timeline },
+    { t: 'Potential Challenges', c: p.potentialChallenges }
+  ];
+  propOut.className = 'prop-out';
+  propOut.innerHTML = `
+    <div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--rule)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:4px">Proposal for GAP ${String(idx+1).padStart(2,'0')}</div>
+      <div style="font-size:13px;color:var(--ink)">${gap.title}</div>
+    </div>
+    ${secs.map(s=>`<div class="psec"><div class="psec-t">${s.t}</div><div class="psec-c">${s.c}</div></div>`).join('')}`;
+  lastProposalText = `${p.title}\n\nBackground:\n${p.background}\n\nObjective:\n${p.objective}\n\nHypotheses:\n${(p.hypotheses||[]).map((h,i)=>`${i+1}. ${h}`).join('\n')}\n\nMethodology:\n${p.methodology}\n\nExpected Outcomes:\n${p.expectedOutcomes}\n\nTimeline:\n${p.timeline}\n\nPotential Challenges:\n${p.potentialChallenges}`;
+  copyPropBtn.style.display = 'inline';
+}
+
+copyPropBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(lastProposalText).then(() => {
+    copyPropBtn.textContent = 'Copied!';
+    setTimeout(() => { copyPropBtn.textContent = 'Copy text'; }, 2000);
+  });
+});
+
+// ════════════════════════════════
+// SEMANTIC SCHOLAR
+// ════════════════════════════════
+const SS_BASE = 'https://api.semanticscholar.org/graph/v1';
+const SS_FIELDS = 'title,authors,year,abstract,externalIds,openAccessPdf,citationCount,fieldsOfStudy,url';
+
+async function fetchSSPapers(query, limit = 5) {
+  const url = `${SS_BASE}/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=${SS_FIELDS}`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Semantic Scholar error ${resp.status}`);
+  const data = await resp.json();
+  return data.data || [];
+}
+
+function buildSSQuery(gap, summaryDomain) {
+  // Build a focused query from gap title + type + domain
+  const terms = [gap.title, gap.type !== 'Interdisciplinary' ? gap.type : '', summaryDomain || '']
+    .filter(Boolean).join(' ');
+  return terms.slice(0, 200); // SS query max
+}
+
+function renderSSPaper(p) {
+  const authors = (p.authors || []).slice(0, 3).map(a => a.name).join(', ') + (p.authors?.length > 3 ? ' et al.' : '');
+  const year = p.year || '—';
+  const cites = p.citationCount != null ? `${p.citationCount} citations` : '';
+  const oa = p.openAccessPdf?.url;
+  const fields = (p.fieldsOfStudy || []).slice(0, 3);
+  const link = p.url || (p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : null);
+  const abstract = p.abstract ? p.abstract.slice(0, 300) + (p.abstract.length > 300 ? '…' : '') : '';
+
+  return `<div class="ss-paper">
+    <div class="ss-paper-body">
+      <div class="ss-paper-title">
+        ${link ? `<a href="${link}" target="_blank" rel="noopener">${p.title}</a>` : p.title}
+      </div>
+      <div class="ss-paper-meta">
+        ${authors ? `<span>${authors}</span>` : ''}
+        <span>${year}</span>
+        ${cites ? `<span>${cites}</span>` : ''}
+      </div>
+      ${abstract ? `<div class="ss-paper-abstract">${abstract}</div>` : ''}
+      <div class="ss-paper-tags">
+        ${fields.map(f => `<span class="ss-tag">${f}</span>`).join('')}
+        ${oa ? `<a href="${oa}" target="_blank" rel="noopener" class="ss-tag ss-tag-oa">Open Access PDF</a>` : ''}
+      </div>
+    </div>
+    ${cites ? `<div class="ss-cite">${p.citationCount.toLocaleString()}<br><span style="font-size:9px">cited</span></div>` : ''}
+  </div>`;
+}
+
+async function loadRelatedPapers(gaps, domain) {
+  const container = document.getElementById('relatedContent');
+  badge('related', '…');
+  container.innerHTML = '';
+
+  let totalFound = 0;
+
+  for (let i = 0; i < gaps.length; i++) {
+    const gap = gaps[i];
+    const section = document.createElement('div');
+    section.className = 'ss-gap-section';
+    section.innerHTML = `
+      ${i > 0 ? '<hr class="ss-divider">' : ''}
+      <div class="ss-gap-label">
+        <span class="ss-gap-num">GAP ${String(i+1).padStart(2,'0')}</span>
+        ${gap.title}
+      </div>
+      <div class="ss-loading" id="ss-load-${i}"><div class="ss-spinner"></div> Searching Semantic Scholar…</div>
+      <div id="ss-results-${i}"></div>`;
+    container.appendChild(section);
+
+    // Stagger requests to be polite to the API
+    await new Promise(r => setTimeout(r, i * 400));
+
+    try {
+      const query = buildSSQuery(gap, domain);
+      const papers = await fetchSSPapers(query, 5);
+      document.getElementById(`ss-load-${i}`).style.display = 'none';
+      const resEl = document.getElementById(`ss-results-${i}`);
+      if (papers.length === 0) {
+        resEl.innerHTML = `<p class="ss-none">No results found for this gap. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try different query</button></p>`;
+      } else {
+        totalFound += papers.length;
+        resEl.innerHTML = `<div class="ss-papers">${papers.map(renderSSPaper).join('')}</div>`;
+      }
+    } catch (err) {
+      document.getElementById(`ss-load-${i}`).style.display = 'none';
+      document.getElementById(`ss-results-${i}`).innerHTML =
+        `<div class="ss-err">Failed to load: ${err.message}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Retry</button></div>`;
+    }
+  }
+
+  badge('related', totalFound);
+}
+
+// Retry single gap search with a broader query
+async function retrySSGap(i) {
+  if (!analysisData) return;
+  const gap = analysisData.gaps[i];
+  const loadEl = document.getElementById(`ss-load-${i}`);
+  const resEl  = document.getElementById(`ss-results-${i}`);
+  loadEl.style.display = 'flex';
+  resEl.innerHTML = '';
+  try {
+    // Broader query: just gap type + first 4 words of title
+    const shortTitle = gap.title.split(' ').slice(0,4).join(' ');
+    const papers = await fetchSSPapers(`${shortTitle} ${gap.type} research`, 5);
+    loadEl.style.display = 'none';
+    resEl.innerHTML = papers.length
+      ? `<div class="ss-papers">${papers.map(renderSSPaper).join('')}</div>`
+      : `<p class="ss-none">Still no results — gap may be too novel or niche.</p>`;
+  } catch(err) {
+    loadEl.style.display = 'none';
+    resEl.innerHTML = `<div class="ss-err">Retry failed: ${err.message}</div>`;
+  }
+}
+
+</script>
+</body>
+</html>
