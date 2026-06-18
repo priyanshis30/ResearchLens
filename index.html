@@ -614,12 +614,20 @@ analyzeBtn.addEventListener('click', async () => {
     parts.push({ text: `${buildPrompt(document.getElementById('depthSelect').value)}\n\nAnalyze ${label} fully. Return only the JSON as specified.` });
 
     const key = getGeminiKey();
+    const requestBody = {
+      contents: [{ parts }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json'
+      }
+    };
     const resp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts }] })
+        body: JSON.stringify(requestBody)
       }
     );
 
@@ -894,7 +902,10 @@ Paper context: ${analysisData.summary?.overview||''}`;
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: 'application/json' }
+        })
       }
     );
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || `API error ${resp.status}`); }
