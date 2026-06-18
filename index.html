@@ -312,16 +312,16 @@ header {
 
 <!-- API KEY BANNER -->
 <div class="apikey-banner">
-  <label for="apikeyInput">Google Gemini API Key</label>
-  <input class="apikey-input" id="apikeyInput" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false">
+  <label for="apikeyInput">Groq API Key (Free)</label>
+  <input class="apikey-input" id="apikeyInput" type="password" placeholder="gsk_…" autocomplete="off" spellcheck="false">
   <button class="apikey-save-btn" id="apikeySaveBtn">Save for session</button>
   <span class="apikey-status" id="apikeyStatus">Not set</span>
-  <a class="apikey-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get free key at aistudio.google.com ↗</a>
+  <a class="apikey-link" href="https://console.groq.com/keys" target="_blank" rel="noopener">Get free key at console.groq.com ↗</a>
 </div>
 
 <header>
   <div class="logo"><span class="logo-dot"></span>ResearchLens</div>
-  <span class="header-tag">Gap Analysis Suite · Gemini AI · Free</span>
+  <span class="header-tag">Gap Analysis Suite · Groq AI · Free</span>
 </header>
 
 <nav class="top-nav">
@@ -338,7 +338,7 @@ header {
 <!-- ══ UPLOAD ══ -->
 <div class="panel active" id="panel-upload">
   <p style="color:var(--muted);font-size:13px;margin-bottom:28px;max-width:620px;line-height:1.7">
-    Upload one or more research PDFs for a full AI-powered analysis using <strong>Google Gemini 1.5 Flash</strong> — completely free. Get your free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a> and paste it in the banner above.
+    Upload one or more research PDFs for a full AI-powered analysis using <strong>Groq (Llama 3.1 70B)</strong> — completely free. Get your free API key at <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent)">console.groq.com/keys</a> and paste it in the banner above.
   </p>
   <div class="upload-zone" id="uploadZone">
     <input type="file" id="fileInput" accept=".pdf" multiple>
@@ -445,7 +445,7 @@ const apikeyInput   = document.getElementById('apikeyInput');
 const apikeySaveBtn = document.getElementById('apikeySaveBtn');
 const apikeyStatus  = document.getElementById('apikeyStatus');
 
-function getApiKey() { return sessionStorage.getItem('rg_gemini_key') || ''; }
+function getApiKey() { return sessionStorage.getItem('rg_groq_key') || ''; }
 function refreshKeyUI(k) {
   if (k) { apikeyStatus.textContent = '✓ Key saved'; apikeyStatus.className = 'apikey-status ok'; apikeyInput.value = k.slice(0,12) + '…'; }
   else    { apikeyStatus.textContent = 'Not set'; apikeyStatus.className = 'apikey-status'; }
@@ -454,14 +454,14 @@ refreshKeyUI(getApiKey());
 apikeySaveBtn.addEventListener('click', () => {
   const v = apikeyInput.value.trim();
   if (!v || v.endsWith('…')) return;
-  sessionStorage.setItem('rg_gemini_key', v);
+  sessionStorage.setItem('rg_groq_key', v);
   refreshKeyUI(v);
 });
 apikeyInput.addEventListener('keydown', e => { if (e.key === 'Enter') apikeySaveBtn.click(); });
 
-function getGeminiKey() {
+function getGroqKey() {
   const k = getApiKey();
-  if (!k) throw new Error('No API key set. Get your free Gemini key at aistudio.google.com and enter it in the banner above.');
+  if (!k) throw new Error('No API key set. Get your free Groq key at console.groq.com and enter it in the banner above.');
   return k;
 }
 
@@ -619,24 +619,23 @@ analyzeBtn.addEventListener('click', async () => {
     const label = uploadedFiles.length === 1 ? 'this research paper' : `these ${uploadedFiles.length} research papers`;
     const fullPrompt = `${buildPrompt(document.getElementById('depthSelect').value)}\n\nAnalyze ${label} fully based on the extracted text below. Return only the JSON as specified.\n\n${combinedText}`;
 
-    const key = getGeminiKey();
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: 'application/json' }
-        })
-      }
-    );
+    const key = getGroqKey();
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'llama-3.1-70b-versatile',
+        messages: [{ role: 'user', content: fullPrompt }],
+        temperature: 0.2,
+        max_tokens: 4096
+      })
+    });
 
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || `API error ${resp.status}`); }
     const raw = await resp.json();
-    const txt = (raw.candidates?.[0]?.content?.parts?.[0]?.text || '').trim()
+    const txt = (raw.choices?.[0]?.message?.content || '').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
-    if (!txt) throw new Error('Empty response from Gemini. Try again.');
+    if (!txt) throw new Error('Empty response. Try again.');
     analysisData = JSON.parse(txt);
 
     stopSteps();
@@ -896,25 +895,25 @@ Suggested Approach: ${gap.suggestedApproach}
 Paper context: ${analysisData.summary?.overview||''}`;
 
   try {
-    const key = getGeminiKey();
+    const key = getGroqKey();
     const prompt = `${sysPr}\n\n${userMsg}`;
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: 'application/json' }
-        })
-      }
-    );
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'llama-3.1-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        max_tokens: 2048
+      })
+    });
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || `API error ${resp.status}`); }
     const raw = await resp.json();
-    const txt = (raw.candidates?.[0]?.content?.parts?.[0]?.text || '').trim()
+    const txt = (raw.choices?.[0]?.message?.content || '').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
-    if (!txt) throw new Error('Empty response from Gemini.');
+    if (!txt) throw new Error('Empty response. Try again.');
     const p = JSON.parse(txt);
+    renderProposal(p, gap, parseInt(idx));
     renderProposal(p, gap, parseInt(idx));
   } catch(err) {
     propErr.textContent = `Generation failed: ${err.message}`;
