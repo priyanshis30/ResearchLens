@@ -987,8 +987,10 @@ const SS_BASE = 'https://api.semanticscholar.org/graph/v1';
 const SS_FIELDS = 'title,authors,year,abstract,externalIds,openAccessPdf,citationCount,fieldsOfStudy,url';
 
 async function fetchSSPapers(query, limit = 5) {
-  const url = `${SS_BASE}/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=${SS_FIELDS}`;
-  const resp = await fetch(url);
+  const targetUrl = `${SS_BASE}/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=${SS_FIELDS}`;
+  // Use corsproxy.io to bypass CORS restriction on GitHub Pages
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+  const resp = await fetch(proxyUrl);
   if (!resp.ok) throw new Error(`Semantic Scholar error ${resp.status}`);
   const data = await resp.json();
   return data.data || [];
