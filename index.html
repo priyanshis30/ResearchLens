@@ -338,7 +338,7 @@ header {
 <!-- ══ UPLOAD ══ -->
 <div class="panel active" id="panel-upload">
   <p style="color:var(--muted);font-size:13px;margin-bottom:28px;max-width:620px;line-height:1.7">
-    Upload one or more research PDFs for a full AI-powered analysis using <strong>Groq (Llama 3.1 70B)</strong> — completely free. Get your free API key at <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent)">console.groq.com/keys</a> and paste it in the banner above.
+    Upload one or more research PDFs for a full AI-powered analysis using <strong>Groq (Llama 3.3 70B)</strong> — completely free. Get your free API key at <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent)">console.groq.com/keys</a> and paste it in the banner above.
   </p>
   <div class="upload-zone" id="uploadZone">
     <input type="file" id="fileInput" accept=".pdf" multiple>
@@ -603,14 +603,12 @@ analyzeBtn.addEventListener('click', async () => {
   startSteps();
 
   try {
-    // Extract text from PDFs using PDF.js — sends only text, not binary, saving ~95% of tokens
     let combinedText = '';
     for (const f of uploadedFiles) {
       const text = await extractPdfText(f);
       combinedText += `\n\n=== FILE: ${f.name} ===\n${text}`;
     }
 
-    // Trim to ~12000 chars to stay well within free tier token limits
     const MAX_CHARS = 12000;
     if (combinedText.length > MAX_CHARS) {
       combinedText = combinedText.slice(0, MAX_CHARS) + '\n\n[Text truncated to fit free tier limits. Analysis based on first ~12,000 characters.]';
@@ -662,7 +660,6 @@ function renderAll(d) {
   renderQuestions(d);
   renderHeatmap(d);
   setupProposal(d);
-  // Kick off Semantic Scholar in background — no await, runs async
   loadRelatedPapers(d.gaps, d.summary?.domain || '');
 }
 
@@ -914,7 +911,6 @@ Paper context: ${analysisData.summary?.overview||''}`;
     if (!txt) throw new Error('Empty response. Try again.');
     const p = JSON.parse(txt);
     renderProposal(p, gap, parseInt(idx));
-    renderProposal(p, gap, parseInt(idx));
   } catch(err) {
     propErr.textContent = `Generation failed: ${err.message}`;
     propErr.className = 'err on';
@@ -957,7 +953,6 @@ copyPropBtn.addEventListener('click', () => {
 // PDF TEXT EXTRACTION (PDF.js)
 // ════════════════════════════════
 async function extractPdfText(file) {
-  // Load PDF.js from CDN if not already loaded
   if (!window.pdfjsLib) {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');
@@ -973,7 +968,7 @@ async function extractPdfText(file) {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let fullText = '';
-  const maxPages = Math.min(pdf.numPages, 20); // cap at 20 pages
+  const maxPages = Math.min(pdf.numPages, 20);
   for (let i = 1; i <= maxPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
@@ -983,33 +978,58 @@ async function extractPdfText(file) {
   return fullText.trim();
 }
 
-const SS_BASE = 'https://api.semanticscholar.org/graph/v1';
+// ════════════════════════════════
+// SEMANTIC SCHOLAR — FIXED
+// Parallel fetching, 3-proxy fallback, 8s timeout per attempt
+// ════════════════════════════════
+const SS_BASE   = 'https://api.semanticscholar.org/graph/v1';
 const SS_FIELDS = 'title,authors,year,abstract,externalIds,openAccessPdf,citationCount,fieldsOfStudy,url';
 
-async function fetchSSPapers(query, limit = 5) {
-  const targetUrl = `${SS_BASE}/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=${SS_FIELDS}`;
-  // Use corsproxy.io to bypass CORS restriction on GitHub Pages
-  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-  const resp = await fetch(proxyUrl);
-  if (!resp.ok) throw new Error(`Semantic Scholar error ${resp.status}`);
-  const data = await resp.json();
-  return data.data || [];
+// Proxy chain — tried in order until one succeeds
+const SS_PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => url  // direct fallback (works if browser allows or SS relaxes CORS)
+];
+
+async function fetchWithTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    return r;
+  } catch(e) { clearTimeout(timer); throw e; }
+}
+
+async function fetchSSPapers(query, limit) {
+  limit = limit || 5;
+  const target = `${SS_BASE}/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=${SS_FIELDS}`;
+  let lastErr;
+  for (const proxy of SS_PROXIES) {
+    try {
+      const resp = await fetchWithTimeout(proxy(target), 8000);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      return data.data || [];
+    } catch(e) { lastErr = e; }
+  }
+  throw new Error(`All proxies failed: ${lastErr?.message || 'unknown error'}`);
 }
 
 function buildSSQuery(gap, summaryDomain) {
-  // Build a focused query from gap title + type + domain
   const terms = [gap.title, gap.type !== 'Interdisciplinary' ? gap.type : '', summaryDomain || '']
     .filter(Boolean).join(' ');
-  return terms.slice(0, 200); // SS query max
+  return terms.slice(0, 200);
 }
 
 function renderSSPaper(p) {
   const authors = (p.authors || []).slice(0, 3).map(a => a.name).join(', ') + (p.authors?.length > 3 ? ' et al.' : '');
-  const year = p.year || '—';
-  const cites = p.citationCount != null ? `${p.citationCount} citations` : '';
-  const oa = p.openAccessPdf?.url;
-  const fields = (p.fieldsOfStudy || []).slice(0, 3);
-  const link = p.url || (p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : null);
+  const year    = p.year || '—';
+  const cites   = p.citationCount != null ? `${p.citationCount} citations` : '';
+  const oa      = p.openAccessPdf?.url;
+  const fields  = (p.fieldsOfStudy || []).slice(0, 3);
+  const link    = p.url || (p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : null);
   const abstract = p.abstract ? p.abstract.slice(0, 300) + (p.abstract.length > 300 ? '…' : '') : '';
 
   return `<div class="ss-paper">
@@ -1032,15 +1052,14 @@ function renderSSPaper(p) {
   </div>`;
 }
 
+// All gaps fetched in parallel — no staggered delay
 async function loadRelatedPapers(gaps, domain) {
   const container = document.getElementById('relatedContent');
   badge('related', '…');
   container.innerHTML = '';
 
-  let totalFound = 0;
-
-  for (let i = 0; i < gaps.length; i++) {
-    const gap = gaps[i];
+  // Render all skeleton sections immediately so UI feels responsive
+  gaps.forEach((gap, i) => {
     const section = document.createElement('div');
     section.className = 'ss-gap-section';
     section.innerHTML = `
@@ -1052,32 +1071,35 @@ async function loadRelatedPapers(gaps, domain) {
       <div class="ss-loading" id="ss-load-${i}"><div class="ss-spinner"></div> Searching Semantic Scholar…</div>
       <div id="ss-results-${i}"></div>`;
     container.appendChild(section);
+  });
 
-    // Stagger requests to be polite to the API
-    await new Promise(r => setTimeout(r, i * 400));
+  // Fire all requests simultaneously
+  const results = await Promise.allSettled(
+    gaps.map(gap => fetchSSPapers(buildSSQuery(gap, domain), 5))
+  );
 
-    try {
-      const query = buildSSQuery(gap, domain);
-      const papers = await fetchSSPapers(query, 5);
-      document.getElementById(`ss-load-${i}`).style.display = 'none';
-      const resEl = document.getElementById(`ss-results-${i}`);
+  let totalFound = 0;
+  results.forEach((result, i) => {
+    document.getElementById(`ss-load-${i}`).style.display = 'none';
+    const resEl = document.getElementById(`ss-results-${i}`);
+
+    if (result.status === 'fulfilled') {
+      const papers = result.value;
       if (papers.length === 0) {
-        resEl.innerHTML = `<p class="ss-none">No results found for this gap. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try different query</button></p>`;
+        resEl.innerHTML = `<p class="ss-none">No results found for this gap. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try wider query</button></p>`;
       } else {
         totalFound += papers.length;
         resEl.innerHTML = `<div class="ss-papers">${papers.map(renderSSPaper).join('')}</div>`;
       }
-    } catch (err) {
-      document.getElementById(`ss-load-${i}`).style.display = 'none';
-      document.getElementById(`ss-results-${i}`).innerHTML =
-        `<div class="ss-err">Failed to load: ${err.message}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Retry</button></div>`;
+    } else {
+      resEl.innerHTML = `<div class="ss-err">Failed to load: ${result.reason?.message || 'unknown error'}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Retry</button></div>`;
     }
-  }
+  });
 
-  badge('related', totalFound);
+  badge('related', totalFound || '0');
 }
 
-// Retry single gap search with a broader query
+// Retry with shorter, broader query using same proxy chain
 async function retrySSGap(i) {
   if (!analysisData) return;
   const gap = analysisData.gaps[i];
@@ -1086,8 +1108,7 @@ async function retrySSGap(i) {
   loadEl.style.display = 'flex';
   resEl.innerHTML = '';
   try {
-    // Broader query: just gap type + first 4 words of title
-    const shortTitle = gap.title.split(' ').slice(0,4).join(' ');
+    const shortTitle = gap.title.split(' ').slice(0, 4).join(' ');
     const papers = await fetchSSPapers(`${shortTitle} ${gap.type} research`, 5);
     loadEl.style.display = 'none';
     resEl.innerHTML = papers.length
@@ -1095,10 +1116,9 @@ async function retrySSGap(i) {
       : `<p class="ss-none">Still no results — gap may be too novel or niche.</p>`;
   } catch(err) {
     loadEl.style.display = 'none';
-    resEl.innerHTML = `<div class="ss-err">Retry failed: ${err.message}</div>`;
+    resEl.innerHTML = `<div class="ss-err">Retry failed: ${err.message}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try again</button></div>`;
   }
 }
-
 </script>
 </body>
 </html>
