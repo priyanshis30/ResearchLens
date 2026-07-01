@@ -6,7 +6,7 @@
 <title>ResearchLens — Gap Analysis Suite</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
+ 
 :root {
   --ink: #0d0c0b;
   --paper: #f6f4ef;
@@ -28,11 +28,11 @@
   --white: #ffffff;
   --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 14px rgba(0,0,0,0.05);
 }
-
+ 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; font-size: 14px; line-height: 1.6; }
-
+ 
 /* ── API KEY BANNER ── */
 .apikey-banner {
   background: #1a1714; color: var(--white);
@@ -57,7 +57,7 @@ body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--
 .apikey-status.ok { color: #5ee87a; opacity: 1; }
 .apikey-link { color: rgba(255,255,255,0.45); font-size: 11px; text-decoration: underline; white-space: nowrap; margin-left: auto; }
 .apikey-link:hover { color: white; }
-
+ 
 /* ── HEADER ── */
 header {
   background: var(--ink); color: var(--white);
@@ -67,7 +67,7 @@ header {
 .logo { font-family: 'DM Serif Display', serif; font-size: 20px; letter-spacing: -0.3px; display: flex; align-items: center; gap: 9px; }
 .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .header-tag { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.4; }
-
+ 
 /* ── TOP NAV ── */
 .top-nav {
   background: var(--white); border-bottom: 1px solid var(--rule);
@@ -87,11 +87,11 @@ header {
   padding: 1px 6px; border-radius: 20px; display: none;
 }
 .top-tab .badge.show { display: inline; }
-
+ 
 /* ── PANELS ── */
 .panel { display: none; max-width: 1080px; margin: 0 auto; padding: 36px 40px 80px; }
 .panel.active { display: block; }
-
+ 
 /* ── UPLOAD ── */
 .upload-zone {
   border: 2px dashed var(--rule); border-radius: 6px; background: var(--white);
@@ -103,7 +103,7 @@ header {
 .upload-icon { width: 42px; height: 42px; margin: 0 auto 12px; color: var(--muted); }
 .upload-zone h2 { font-family: 'DM Serif Display', serif; font-size: 21px; margin-bottom: 6px; }
 .upload-zone p { color: var(--muted); font-size: 13px; }
-
+ 
 .file-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
 .file-item {
   display: flex; align-items: center; gap: 10px; background: var(--white);
@@ -113,7 +113,7 @@ header {
 .file-item .fs { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
 .rm-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 17px; line-height: 1; padding: 2px 4px; border-radius: 3px; transition: color 0.15s, background 0.15s; }
 .rm-btn:hover { color: var(--red); background: var(--red-bg); }
-
+ 
 .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
 .btn {
   display: inline-flex; align-items: center; gap: 7px; padding: 9px 20px; border-radius: 4px;
@@ -128,7 +128,7 @@ header {
 .btn-blue { background: var(--accent); color: var(--white); }
 .btn-blue:hover:not(:disabled) { background: var(--accent-hover); }
 .sel { border: 1px solid var(--rule); background: var(--white); padding: 9px 13px; font-family: 'Inter', sans-serif; font-size: 13px; border-radius: 4px; color: var(--ink); cursor: pointer; }
-
+ 
 /* ── LOADING ── */
 .load-wrap { display: none; margin-bottom: 24px; }
 .load-wrap.on { display: block; }
@@ -141,16 +141,16 @@ header {
 .ldot.done { background: var(--green); }
 .ldot.go { background: var(--accent); animation: dp 1s ease-in-out infinite; }
 @keyframes dp { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.7} }
-
+ 
 /* ── ERROR ── */
 .err { background: var(--red-bg); border: 1px solid #f0c0c0; border-radius: 4px; padding: 13px 17px; color: var(--red); font-size: 13px; margin-bottom: 20px; display: none; }
 .err.on { display: block; }
-
+ 
 /* ── SECTION HEADER ── */
 .shd { display: flex; align-items: baseline; justify-content: space-between; border-top: 2px solid var(--ink); padding-top: 26px; margin-bottom: 22px; flex-wrap: wrap; gap: 10px; }
 .shd h2 { font-family: 'DM Serif Display', serif; font-size: 26px; }
 .stag { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.07em; }
-
+ 
 /* ── SUMMARY ── */
 .sum-hero {
   background: var(--ink); color: var(--white); border-radius: 6px; padding: 28px 32px; margin-bottom: 22px;
@@ -163,14 +163,14 @@ header {
 .stat { display: flex; flex-direction: column; gap: 2px; }
 .stat .n { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1; }
 .stat .l { font-size: 10px; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.08em; }
-
+ 
 .sum-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .scard { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 20px 22px; box-shadow: var(--shadow); }
 .scard .slbl2 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
 .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .bullet-list li { display: flex; gap: 8px; font-size: 13px; line-height: 1.6; }
 .bullet-list li::before { content: '✓'; color: var(--green); flex-shrink: 0; margin-top: 1px; }
-
+ 
 /* ── GAPS ── */
 .gaps-grid { display: grid; gap: 14px; }
 .gap-card { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 22px 26px; border-left: 4px solid var(--rule); box-shadow: var(--shadow); }
@@ -188,7 +188,7 @@ header {
 .gdesc { font-size: 13px; line-height: 1.75; color: #3a3530; margin-bottom: 12px; }
 .gmeta { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: flex-start; }
 .gmeta span:first-child { color: var(--accent); font-weight: 600; flex-shrink: 0; }
-
+ 
 /* ── FUTURE WORK ── */
 .fw-list { display: flex; flex-direction: column; gap: 10px; }
 .fw-item { display: flex; gap: 14px; background: var(--white); border: 1px solid var(--rule); border-radius: 5px; padding: 14px 18px; box-shadow: var(--shadow); }
@@ -202,7 +202,7 @@ header {
 .fw-long { background: var(--purple-bg); color: var(--purple); }
 .fw-explicit { background: var(--accent-dim); color: var(--accent); }
 .fw-inferred { background: var(--cream); color: var(--muted); }
-
+ 
 /* ── RESEARCH QUESTIONS ── */
 .rq-grid { display: grid; gap: 12px; }
 .rq-card { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; box-shadow: var(--shadow); display: flex; gap: 14px; }
@@ -213,7 +213,7 @@ header {
 .rqd { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
 .diff-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--cream); text-transform: uppercase; letter-spacing: 0.07em; }
 .rqlink { font-size: 11px; color: var(--purple); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
-
+ 
 /* ── HEATMAP ── */
 .hm-wrap { background: var(--white); border: 1px solid var(--rule); border-radius: 6px; padding: 28px 32px; box-shadow: var(--shadow); }
 .hm-wrap h3 { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 6px; }
@@ -236,7 +236,7 @@ header {
 .hm-bar { display: flex; gap: 3px; }
 .hm-swatch { width: 20px; height: 13px; border-radius: 2px; }
 .tooltip { position: fixed; background: var(--ink); color: var(--white); font-size: 12px; padding: 8px 12px; border-radius: 4px; pointer-events: none; display: none; z-index: 999; max-width: 240px; line-height: 1.5; white-space: pre-line; }
-
+ 
 /* ── PROPOSAL ── */
 .proposal-ctrl { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
 .prop-sel { border: 1px solid var(--rule); background: var(--white); padding: 9px 13px; font-family: 'Inter', sans-serif; font-size: 13px; border-radius: 4px; color: var(--ink); cursor: pointer; flex: 1; min-width: 200px; max-width: 400px; }
@@ -249,12 +249,12 @@ header {
 .prop-loading { text-align: center; color: var(--muted); font-style: italic; font-size: 13px; padding: 40px; }
 .copy-btn { background: none; border: 1px solid var(--rule); border-radius: 3px; padding: 5px 10px; font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; transition: background 0.15s; }
 .copy-btn:hover { background: var(--cream); color: var(--ink); }
-
+ 
 /* ── OPPORTUNITIES ── */
 .opp-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 28px; }
 .opp-list li { display: flex; gap: 12px; font-size: 13px; line-height: 1.7; padding: 12px 16px; background: var(--accent-dim); border-radius: 4px; }
 .opp-list li::before { content: '→'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
-
+ 
 /* ── RELATED PAPERS ── */
 .ss-intro { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 24px; max-width: 640px; }
 .ss-intro a { color: var(--accent); text-decoration: none; }
@@ -295,7 +295,7 @@ header {
 }
 .ss-refetch-btn:hover { background: var(--cream); color: var(--ink); }
 .ss-divider { border: none; border-top: 1px solid var(--rule); margin: 28px 0; }
-
+ 
 @media (max-width: 640px) {
   .apikey-banner { padding: 10px 20px; }
   header { padding: 0 20px; }
@@ -309,7 +309,7 @@ header {
 </head>
 <body>
 <div class="tooltip" id="tooltip"></div>
-
+ 
 <!-- API KEY BANNER -->
 <div class="apikey-banner">
   <label for="apikeyInput">Groq API Key (Free)</label>
@@ -318,12 +318,12 @@ header {
   <span class="apikey-status" id="apikeyStatus">Not set</span>
   <a class="apikey-link" href="https://console.groq.com/keys" target="_blank" rel="noopener">Get free key at console.groq.com ↗</a>
 </div>
-
+ 
 <header>
   <div class="logo"><span class="logo-dot"></span>ResearchLens</div>
   <span class="header-tag">Gap Analysis Suite · Groq AI · Free</span>
 </header>
-
+ 
 <nav class="top-nav">
   <button class="top-tab active" data-tab="upload">Upload &amp; Analyze</button>
   <button class="top-tab" data-tab="summary">Summary <span class="badge" id="b-summary"></span></button>
@@ -334,7 +334,7 @@ header {
   <button class="top-tab" data-tab="related">Related Papers <span class="badge" id="b-related"></span></button>
   <button class="top-tab" data-tab="proposal">Proposal Generator <span class="badge" id="b-proposal"></span></button>
 </nav>
-
+ 
 <!-- ══ UPLOAD ══ -->
 <div class="panel active" id="panel-upload">
   <p style="color:var(--muted);font-size:13px;margin-bottom:28px;max-width:620px;line-height:1.7">
@@ -376,48 +376,48 @@ header {
     </div>
   </div>
 </div>
-
+ 
 <!-- ══ SUMMARY ══ -->
 <div class="panel" id="panel-summary">
   <div class="shd"><h2>Paper Summary</h2><span class="stag" id="meta-summary"></span></div>
   <div id="summaryContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
 </div>
-
+ 
 <!-- ══ GAPS ══ -->
 <div class="panel" id="panel-gaps">
   <div class="shd"><h2>Research Gap Detection</h2><span class="stag" id="meta-gaps"></span></div>
   <div class="gaps-grid" id="gapsGrid"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
   <ul class="opp-list" id="oppList" style="display:none"></ul>
 </div>
-
+ 
 <!-- ══ FUTURE WORK ══ -->
 <div class="panel" id="panel-future">
   <div class="shd"><h2>Future Work Extraction</h2><span class="stag" id="meta-future"></span></div>
   <div class="fw-list" id="fwList"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
 </div>
-
+ 
 <!-- ══ RESEARCH QUESTIONS ══ -->
 <div class="panel" id="panel-questions">
   <div class="shd"><h2>Research Question Generator</h2><span class="stag" id="meta-questions"></span></div>
   <div class="rq-grid" id="rqGrid"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
 </div>
-
+ 
 <!-- ══ HEATMAP ══ -->
 <div class="panel" id="panel-heatmap">
   <div class="shd"><h2>Gap Intensity Heatmap</h2><span class="stag">Type × Severity Matrix</span></div>
   <div id="heatmapContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
 </div>
-
+ 
 <!-- ══ RELATED PAPERS ══ -->
 <div class="panel" id="panel-related">
-  <div class="shd"><h2>Related Papers</h2><span class="stag" id="meta-related">Via Semantic Scholar · Free · No key needed</span></div>
+  <div class="shd"><h2>Related Papers</h2><span class="stag" id="meta-related">Via OpenAlex · Free · No key needed</span></div>
   <p class="ss-intro">
-    For each detected gap, ResearchLens searches <a href="https://www.semanticscholar.org" target="_blank" rel="noopener">Semantic Scholar</a> to surface the most relevant existing literature — helping you understand what's already been done and where the white space truly lies.
-    <br><span style="opacity:0.7">Results load automatically after analysis. Click a paper title to open it on Semantic Scholar.</span>
+    For each detected gap, ResearchLens searches <a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a> to surface the most relevant existing literature — helping you understand what's already been done and where the white space truly lies.
+    <br><span style="opacity:0.7">Results load automatically after analysis. Click a paper title to open it.</span>
   </p>
   <div id="relatedContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
 </div>
-
+ 
 <!-- ══ PROPOSAL ══ -->
 <div class="panel" id="panel-proposal">
   <div class="shd"><h2>Research Proposal Generator</h2><span class="stag">Select a gap · Choose study type · Generate</span></div>
@@ -436,7 +436,7 @@ header {
   <div class="err" id="propErr"></div>
   <div class="prop-out prop-empty" id="propOut"><span>Select a gap above and click Generate Proposal</span></div>
 </div>
-
+ 
 <script>
 // ════════════════════════════════
 // API KEY
@@ -444,7 +444,7 @@ header {
 const apikeyInput   = document.getElementById('apikeyInput');
 const apikeySaveBtn = document.getElementById('apikeySaveBtn');
 const apikeyStatus  = document.getElementById('apikeyStatus');
-
+ 
 function getApiKey() { return sessionStorage.getItem('rg_groq_key') || ''; }
 function refreshKeyUI(k) {
   if (k) { apikeyStatus.textContent = '✓ Key saved'; apikeyStatus.className = 'apikey-status ok'; apikeyInput.value = k.slice(0,12) + '…'; }
@@ -458,13 +458,13 @@ apikeySaveBtn.addEventListener('click', () => {
   refreshKeyUI(v);
 });
 apikeyInput.addEventListener('keydown', e => { if (e.key === 'Enter') apikeySaveBtn.click(); });
-
+ 
 function getGroqKey() {
   const k = getApiKey();
   if (!k) throw new Error('No API key set. Get your free Groq key at console.groq.com and enter it in the banner above.');
   return k;
 }
-
+ 
 // ════════════════════════════════
 // TABS
 // ════════════════════════════════
@@ -481,7 +481,7 @@ function badge(id, val) {
   el.textContent = val;
   el.classList.add('show');
 }
-
+ 
 // ════════════════════════════════
 // UPLOAD
 // ════════════════════════════════
@@ -493,7 +493,7 @@ const clearBtn   = document.getElementById('clearBtn');
 const errBox     = document.getElementById('errBox');
 const loadWrap   = document.getElementById('loadWrap');
 let uploadedFiles = [], analysisData = null;
-
+ 
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
 uploadZone.addEventListener('drop', e => {
@@ -501,7 +501,7 @@ uploadZone.addEventListener('drop', e => {
   addFiles([...e.dataTransfer.files].filter(f => f.type === 'application/pdf'));
 });
 fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
-
+ 
 function addFiles(files) {
   files.forEach(f => { if (!uploadedFiles.find(u => u.name === f.name)) uploadedFiles.push(f); });
   renderFileList();
@@ -519,7 +519,7 @@ function renderFileList() {
   clearBtn.disabled = uploadedFiles.length === 0;
 }
 clearBtn.addEventListener('click', () => { uploadedFiles = []; analysisData = null; renderFileList(); errBox.className = 'err'; });
-
+ 
 // ════════════════════════════════
 // STEP ANIMATION
 // ════════════════════════════════
@@ -539,16 +539,16 @@ function stopSteps() {
   clearInterval(stepTimer);
   [1,2,3,4,5,6].forEach(n => { document.getElementById('d'+n).className = 'ldot done'; });
 }
-
+ 
 // ════════════════════════════════
 // SYSTEM PROMPT
 // ════════════════════════════════
 function buildPrompt(depth) {
   const d = { quick:'3–4 gaps and 4 research questions', standard:'5–7 gaps and 6 research questions', deep:'8–12 gaps and 8–10 research questions' };
   return `You are a senior academic research analyst. Return ONLY a valid JSON object. No markdown, no code fences, no text outside the JSON.
-
+ 
 Provide ${d[depth]||d.standard}.
-
+ 
 {
   "paperTitles": ["title"],
   "summary": {
@@ -584,39 +584,39 @@ Provide ${d[depth]||d.standard}.
     }
   ]
 }
-
+ 
 Severity: high=critical limit to understanding; medium=notable; low=refinement.
 Be specific — cite actual paper content. Make questions novel and actionable.`;
 }
-
+ 
 // ════════════════════════════════
 // ANALYZE
 // ════════════════════════════════
 function toB64(file) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
 }
-
+ 
 analyzeBtn.addEventListener('click', async () => {
   errBox.className = 'err';
   loadWrap.className = 'load-wrap on';
   analyzeBtn.disabled = true;
   startSteps();
-
+ 
   try {
     let combinedText = '';
     for (const f of uploadedFiles) {
       const text = await extractPdfText(f);
       combinedText += `\n\n=== FILE: ${f.name} ===\n${text}`;
     }
-
+ 
     const MAX_CHARS = 12000;
     if (combinedText.length > MAX_CHARS) {
       combinedText = combinedText.slice(0, MAX_CHARS) + '\n\n[Text truncated to fit free tier limits. Analysis based on first ~12,000 characters.]';
     }
-
+ 
     const label = uploadedFiles.length === 1 ? 'this research paper' : `these ${uploadedFiles.length} research papers`;
     const fullPrompt = `${buildPrompt(document.getElementById('depthSelect').value)}\n\nAnalyze ${label} fully based on the extracted text below. Return only the JSON as specified.\n\n${combinedText}`;
-
+ 
     const key = getGroqKey();
     const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -628,18 +628,18 @@ analyzeBtn.addEventListener('click', async () => {
         max_tokens: 4096
       })
     });
-
+ 
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || `API error ${resp.status}`); }
     const raw = await resp.json();
     const txt = (raw.choices?.[0]?.message?.content || '').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
     if (!txt) throw new Error('Empty response. Try again.');
     analysisData = JSON.parse(txt);
-
+ 
     stopSteps();
     renderAll(analysisData);
     showTab('summary');
-
+ 
   } catch(err) {
     stopSteps();
     errBox.textContent = `Analysis failed: ${err.message}`;
@@ -649,7 +649,7 @@ analyzeBtn.addEventListener('click', async () => {
     analyzeBtn.disabled = uploadedFiles.length === 0;
   }
 });
-
+ 
 // ════════════════════════════════
 // RENDER ALL
 // ════════════════════════════════
@@ -662,16 +662,16 @@ function renderAll(d) {
   setupProposal(d);
   loadRelatedPapers(d.gaps, d.summary?.domain || '');
 }
-
+ 
 // ── SUMMARY ──
 function renderSummary(d) {
   const s = d.summary || {};
   document.getElementById('meta-summary').textContent = `${d.paperTitles?.length||1} paper(s) · ${s.domain||''}`;
   badge('summary', '✓');
-
+ 
   const titlesLine = d.paperTitles?.join(' · ') || '';
   const claimsHtml = (s.keyClaims||[]).map(c=>`<li>${c}</li>`).join('');
-
+ 
   document.getElementById('summaryContent').innerHTML = `
     <div class="sum-hero">
       <div class="slbl">Synthesized Overview · ${s.domain||'Research'}</div>
@@ -697,13 +697,13 @@ function renderSummary(d) {
       </div>
     </div>`;
 }
-
+ 
 // ── GAPS ──
 function renderGaps(d) {
   const sevClass = {high:'hi',medium:'md',low:'lo'};
   document.getElementById('meta-gaps').textContent = `${d.gaps.length} gaps · ${d.gaps.filter(g=>g.severity==='high').length} critical`;
   badge('gaps', d.gaps.length);
-
+ 
   const grid = document.getElementById('gapsGrid');
   grid.innerHTML = '';
   d.gaps.forEach((g,i) => {
@@ -720,20 +720,20 @@ function renderGaps(d) {
       <div class="gmeta"><span>Suggested approach:</span><span>${g.suggestedApproach}</span></div>`;
     grid.appendChild(el);
   });
-
+ 
   const oppList = document.getElementById('oppList');
   if (d.futureOpportunities?.length) {
     oppList.innerHTML = d.futureOpportunities.map(o=>`<li>${o}</li>`).join('');
     oppList.style.display = 'flex';
   } else { oppList.style.display = 'none'; }
 }
-
+ 
 // ── FUTURE WORK ──
 function renderFutureWork(d) {
   const fw = d.futureWork || [];
   document.getElementById('meta-future').textContent = `${fw.length} directions · explicit + inferred`;
   badge('future', fw.length);
-
+ 
   const tmap = { 'short-term':'fw-short','medium-term':'fw-mid','long-term':'fw-long' };
   document.getElementById('fwList').innerHTML = fw.length ? fw.map(f => `
     <div class="fw-item">
@@ -747,13 +747,13 @@ function renderFutureWork(d) {
       </div>
     </div>`).join('') : '<p style="color:var(--muted);font-size:13px">No future work data found.</p>';
 }
-
+ 
 // ── RESEARCH QUESTIONS ──
 function renderQuestions(d) {
   const rqs = d.researchQuestions || [];
   document.getElementById('meta-questions').textContent = `${rqs.length} questions generated`;
   badge('questions', rqs.length);
-
+ 
   const diffCol = { feasible:'var(--green)', challenging:'var(--orange)', ambitious:'var(--purple)' };
   const grid = document.getElementById('rqGrid');
   grid.innerHTML = '';
@@ -773,14 +773,14 @@ function renderQuestions(d) {
     grid.appendChild(el);
   });
 }
-
+ 
 // ── HEATMAP ──
 function renderHeatmap(d) {
   badge('heatmap', '✓');
   const types = ['Theoretical','Methodological','Empirical','Contextual','Interdisciplinary','Practical'];
   const sevs  = ['high','medium','low'];
   const sevLbl = {high:'High',medium:'Medium',low:'Low'};
-
+ 
   const matrix = {};
   types.forEach(t => { matrix[t]={}; sevs.forEach(s => { matrix[t][s]=[]; }); });
   (d.gaps||[]).forEach((g,idx) => {
@@ -789,7 +789,7 @@ function renderHeatmap(d) {
   });
   let mx = 0;
   types.forEach(t => sevs.forEach(s => { mx = Math.max(mx, matrix[t][s].length); }));
-
+ 
   let html = `<div class="hm-wrap">
     <h3>Gap Intensity Heatmap</h3>
     <p class="hm-sub">Each cell shows the count of gaps at the intersection of gap type (rows) and severity (columns). Hover for gap titles. Darker red = higher concentration of critical gaps.</p>
@@ -824,9 +824,9 @@ function renderHeatmap(d) {
       <span style="margin-left:auto;font-size:11px;color:var(--muted-light)">Hover cells for gap titles</span>
     </div>
   </div>`;
-
+ 
   document.getElementById('heatmapContent').innerHTML = html;
-
+ 
   const tooltip = document.getElementById('tooltip');
   document.querySelectorAll('.hm-cell').forEach(cell => {
     cell.addEventListener('mousemove', e => {
@@ -839,7 +839,7 @@ function renderHeatmap(d) {
     cell.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
   });
 }
-
+ 
 // ── PROPOSAL SETUP ──
 function setupProposal(d) {
   badge('proposal', '✓');
@@ -853,26 +853,26 @@ function setupProposal(d) {
   document.getElementById('propOut').innerHTML = '<span>Select a gap above and click Generate Proposal</span>';
   document.getElementById('copyPropBtn').style.display = 'none';
 }
-
+ 
 // ── PROPOSAL GENERATE ──
 const genPropBtn  = document.getElementById('genPropBtn');
 const propOut     = document.getElementById('propOut');
 const propErr     = document.getElementById('propErr');
 const copyPropBtn = document.getElementById('copyPropBtn');
-
+ 
 genPropBtn.addEventListener('click', async () => {
   if (!analysisData) return;
   const idx = document.getElementById('propGapSel').value;
   if (idx === '') { alert('Select a gap first.'); return; }
   const gap = analysisData.gaps[parseInt(idx)];
   const stype = document.getElementById('propTypeSel').value;
-
+ 
   propErr.className = 'err';
   propOut.className = 'prop-out';
   propOut.innerHTML = '<div class="prop-loading">Drafting research proposal…</div>';
   copyPropBtn.style.display = 'none';
   genPropBtn.disabled = true;
-
+ 
   const sysPr = `You are an expert academic research proposal writer. Return ONLY valid JSON, no markdown, no code fences.
 {
   "title": "Proposed research title",
@@ -884,13 +884,13 @@ genPropBtn.addEventListener('click', async () => {
   "timeline": "3–4 key milestones as a single string",
   "potentialChallenges": "1–2 sentences on obstacles and mitigation"
 }`;
-
+ 
   const userMsg = `Write a ${stype} research proposal for this gap:
 Title: ${gap.title}
 Description: ${gap.description}
 Suggested Approach: ${gap.suggestedApproach}
 Paper context: ${analysisData.summary?.overview||''}`;
-
+ 
   try {
     const key = getGroqKey();
     const prompt = `${sysPr}\n\n${userMsg}`;
@@ -918,7 +918,7 @@ Paper context: ${analysisData.summary?.overview||''}`;
     propOut.innerHTML = '<span>Select a gap above and click Generate Proposal</span>';
   } finally { genPropBtn.disabled = false; }
 });
-
+ 
 let lastProposalText = '';
 function renderProposal(p, gap, idx) {
   const secs = [
@@ -941,14 +941,14 @@ function renderProposal(p, gap, idx) {
   lastProposalText = `${p.title}\n\nBackground:\n${p.background}\n\nObjective:\n${p.objective}\n\nHypotheses:\n${(p.hypotheses||[]).map((h,i)=>`${i+1}. ${h}`).join('\n')}\n\nMethodology:\n${p.methodology}\n\nExpected Outcomes:\n${p.expectedOutcomes}\n\nTimeline:\n${p.timeline}\n\nPotential Challenges:\n${p.potentialChallenges}`;
   copyPropBtn.style.display = 'inline';
 }
-
+ 
 copyPropBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(lastProposalText).then(() => {
     copyPropBtn.textContent = 'Copied!';
     setTimeout(() => { copyPropBtn.textContent = 'Copy text'; }, 2000);
   });
 });
-
+ 
 // ════════════════════════════════
 // PDF TEXT EXTRACTION (PDF.js)
 // ════════════════════════════════
@@ -964,7 +964,7 @@ async function extractPdfText(file) {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
-
+ 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let fullText = '';
@@ -977,21 +977,16 @@ async function extractPdfText(file) {
   }
   return fullText.trim();
 }
-
+ 
 // ════════════════════════════════
-// SEMANTIC SCHOLAR — FIXED
-// Parallel fetching, 3-proxy fallback, 8s timeout per attempt
+// RELATED PAPERS — OPENALEX
+// No proxy needed: OpenAlex sends proper CORS headers, so this
+// hits the API directly from the browser. Much more reliable than
+// routing through public CORS proxies.
 // ════════════════════════════════
-const SS_BASE   = 'https://api.semanticscholar.org/graph/v1';
-const SS_FIELDS = 'title,authors,year,abstract,externalIds,openAccessPdf,citationCount,fieldsOfStudy,url';
-
-// Proxy chain — tried in order until one succeeds
-const SS_PROXIES = [
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  url => url  // direct fallback (works if browser allows or SS relaxes CORS)
-];
-
+const OA_BASE   = 'https://api.openalex.org/works';
+const OA_SELECT = 'id,doi,display_name,authorships,publication_year,cited_by_count,open_access,primary_topic,abstract_inverted_index';
+ 
 async function fetchWithTimeout(url, ms) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
@@ -1001,41 +996,48 @@ async function fetchWithTimeout(url, ms) {
     return r;
   } catch(e) { clearTimeout(timer); throw e; }
 }
-
-async function fetchSSPapers(query, limit) {
-  limit = limit || 5;
-  const target = `${SS_BASE}/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=${SS_FIELDS}`;
-  let lastErr;
-  for (const proxy of SS_PROXIES) {
-    try {
-      const resp = await fetchWithTimeout(proxy(target), 8000);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      return data.data || [];
-    } catch(e) { lastErr = e; }
+ 
+function reconstructAbstract(invIndex) {
+  if (!invIndex) return '';
+  const words = [];
+  for (const [word, positions] of Object.entries(invIndex)) {
+    positions.forEach(pos => { words[pos] = word; });
   }
-  throw new Error(`All proxies failed: ${lastErr?.message || 'unknown error'}`);
+  return words.filter(Boolean).join(' ');
 }
-
-function buildSSQuery(gap, summaryDomain) {
+ 
+async function fetchOAPapers(query, limit) {
+  limit = limit || 5;
+  const url = `${OA_BASE}?search=${encodeURIComponent(query)}&per-page=${limit}&select=${OA_SELECT}`;
+  const resp = await fetchWithTimeout(url, 10000);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
+  return data.results || [];
+}
+ 
+function buildOAQuery(gap, summaryDomain) {
   const terms = [gap.title, gap.type !== 'Interdisciplinary' ? gap.type : '', summaryDomain || '']
     .filter(Boolean).join(' ');
   return terms.slice(0, 200);
 }
-
-function renderSSPaper(p) {
-  const authors = (p.authors || []).slice(0, 3).map(a => a.name).join(', ') + (p.authors?.length > 3 ? ' et al.' : '');
-  const year    = p.year || '—';
-  const cites   = p.citationCount != null ? `${p.citationCount} citations` : '';
-  const oa      = p.openAccessPdf?.url;
-  const fields  = (p.fieldsOfStudy || []).slice(0, 3);
-  const link    = p.url || (p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : null);
-  const abstract = p.abstract ? p.abstract.slice(0, 300) + (p.abstract.length > 300 ? '…' : '') : '';
-
+ 
+function renderOAPaper(p) {
+  const authors = (p.authorships || []).slice(0, 3).map(a => a.author?.display_name).filter(Boolean).join(', ')
+    + (p.authorships?.length > 3 ? ' et al.' : '');
+  const year    = p.publication_year || '—';
+  const cites   = p.cited_by_count != null ? `${p.cited_by_count} citations` : '';
+  const oa      = p.open_access?.oa_url;
+  const topic   = p.primary_topic?.display_name;
+  const field   = p.primary_topic?.field?.display_name;
+  const tags    = [topic, field].filter(Boolean);
+  const link    = p.doi ? `https://doi.org/${p.doi.replace(/^https?:\/\/doi\.org\//,'')}` : p.id;
+  const abstractFull = reconstructAbstract(p.abstract_inverted_index);
+  const abstract = abstractFull ? abstractFull.slice(0, 300) + (abstractFull.length > 300 ? '…' : '') : '';
+ 
   return `<div class="ss-paper">
     <div class="ss-paper-body">
       <div class="ss-paper-title">
-        ${link ? `<a href="${link}" target="_blank" rel="noopener">${p.title}</a>` : p.title}
+        ${link ? `<a href="${link}" target="_blank" rel="noopener">${p.display_name}</a>` : p.display_name}
       </div>
       <div class="ss-paper-meta">
         ${authors ? `<span>${authors}</span>` : ''}
@@ -1044,21 +1046,21 @@ function renderSSPaper(p) {
       </div>
       ${abstract ? `<div class="ss-paper-abstract">${abstract}</div>` : ''}
       <div class="ss-paper-tags">
-        ${fields.map(f => `<span class="ss-tag">${f}</span>`).join('')}
+        ${tags.map(f => `<span class="ss-tag">${f}</span>`).join('')}
         ${oa ? `<a href="${oa}" target="_blank" rel="noopener" class="ss-tag ss-tag-oa">Open Access PDF</a>` : ''}
       </div>
     </div>
-    ${cites ? `<div class="ss-cite">${p.citationCount.toLocaleString()}<br><span style="font-size:9px">cited</span></div>` : ''}
+    ${cites ? `<div class="ss-cite">${p.cited_by_count.toLocaleString()}<br><span style="font-size:9px">cited</span></div>` : ''}
   </div>`;
 }
-
-// All gaps fetched in parallel — no staggered delay
+ 
+// All gaps fetched in parallel — no staggered delay needed since
+// there's no shared proxy to overwhelm.
 async function loadRelatedPapers(gaps, domain) {
   const container = document.getElementById('relatedContent');
   badge('related', '…');
   container.innerHTML = '';
-
-  // Render all skeleton sections immediately so UI feels responsive
+ 
   gaps.forEach((gap, i) => {
     const section = document.createElement('div');
     section.className = 'ss-gap-section';
@@ -1068,38 +1070,37 @@ async function loadRelatedPapers(gaps, domain) {
         <span class="ss-gap-num">GAP ${String(i+1).padStart(2,'0')}</span>
         ${gap.title}
       </div>
-      <div class="ss-loading" id="ss-load-${i}"><div class="ss-spinner"></div> Searching Semantic Scholar…</div>
+      <div class="ss-loading" id="ss-load-${i}"><div class="ss-spinner"></div> Searching OpenAlex…</div>
       <div id="ss-results-${i}"></div>`;
     container.appendChild(section);
   });
-
-  // Fire all requests simultaneously
+ 
   const results = await Promise.allSettled(
-    gaps.map(gap => fetchSSPapers(buildSSQuery(gap, domain), 5))
+    gaps.map(gap => fetchOAPapers(buildOAQuery(gap, domain), 5))
   );
-
+ 
   let totalFound = 0;
   results.forEach((result, i) => {
     document.getElementById(`ss-load-${i}`).style.display = 'none';
     const resEl = document.getElementById(`ss-results-${i}`);
-
+ 
     if (result.status === 'fulfilled') {
       const papers = result.value;
       if (papers.length === 0) {
         resEl.innerHTML = `<p class="ss-none">No results found for this gap. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try wider query</button></p>`;
       } else {
         totalFound += papers.length;
-        resEl.innerHTML = `<div class="ss-papers">${papers.map(renderSSPaper).join('')}</div>`;
+        resEl.innerHTML = `<div class="ss-papers">${papers.map(renderOAPaper).join('')}</div>`;
       }
     } else {
       resEl.innerHTML = `<div class="ss-err">Failed to load: ${result.reason?.message || 'unknown error'}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Retry</button></div>`;
     }
   });
-
+ 
   badge('related', totalFound || '0');
 }
-
-// Retry with shorter, broader query using same proxy chain
+ 
+// Retry with a shorter, broader query
 async function retrySSGap(i) {
   if (!analysisData) return;
   const gap = analysisData.gaps[i];
@@ -1109,10 +1110,10 @@ async function retrySSGap(i) {
   resEl.innerHTML = '';
   try {
     const shortTitle = gap.title.split(' ').slice(0, 4).join(' ');
-    const papers = await fetchSSPapers(`${shortTitle} ${gap.type} research`, 5);
+    const papers = await fetchOAPapers(`${shortTitle} ${gap.type} research`, 5);
     loadEl.style.display = 'none';
     resEl.innerHTML = papers.length
-      ? `<div class="ss-papers">${papers.map(renderSSPaper).join('')}</div>`
+      ? `<div class="ss-papers">${papers.map(renderOAPaper).join('')}</div>`
       : `<p class="ss-none">Still no results — gap may be too novel or niche.</p>`;
   } catch(err) {
     loadEl.style.display = 'none';
