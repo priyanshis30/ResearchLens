@@ -979,13 +979,19 @@ async function extractPdfText(file) {
 }
  
 // ════════════════════════════════
-// RELATED PAPERS — OPENALEX
-// No proxy needed: OpenAlex sends proper CORS headers, so this
-// hits the API directly from the browser. Much more reliable than
-// routing through public CORS proxies.
+// RELATED PAPERS — OPENALEX (primary) + CROSSREF (fallback)
+// No proxy needed: both APIs send proper CORS headers. OpenAlex
+// 5xx responses are usually transient load-shedding, so we retry
+// with backoff before falling back to Crossref, and we join
+// OpenAlex's "polite pool" (mailto param) which gets a much better
+// response rate than anonymous requests.
 // ════════════════════════════════
 const OA_BASE   = 'https://api.openalex.org/works';
 const OA_SELECT = 'id,doi,display_name,authorships,publication_year,cited_by_count,open_access,primary_topic,abstract_inverted_index';
+const OA_MAILTO = 'researchlens.app@gmail.com'; // polite-pool contact — improves OpenAlex rate limits
+const CR_BASE   = 'https://api.crossref.org/works';
+ 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
  
 async function fetchWithTimeout(url, ms) {
   const ctrl = new AbortController();
@@ -997,6 +1003,29 @@ async function fetchWithTimeout(url, ms) {
   } catch(e) { clearTimeout(timer); throw e; }
 }
  
+// Fetch with automatic retry on 429/5xx (exponential backoff: 400ms, 1200ms)
+async function fetchJsonWithRetry(url, opts) {
+  opts = opts || {};
+  const timeout = opts.timeout || 10000;
+  const retries = opts.retries != null ? opts.retries : 2;
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetchWithTimeout(url, timeout);
+      if (resp.ok) return await resp.json();
+      lastErr = new Error(`HTTP ${resp.status}`);
+      if ((resp.status === 429 || resp.status >= 500) && attempt < retries) {
+        await sleep(400 * Math.pow(3, attempt)); continue;
+      }
+      throw lastErr;
+    } catch(e) {
+      lastErr = e;
+      if (attempt < retries) { await sleep(400 * Math.pow(3, attempt)); continue; }
+    }
+  }
+  throw lastErr || new Error('Request failed');
+}
+ 
 function reconstructAbstract(invIndex) {
   if (!invIndex) return '';
   const words = [];
@@ -1006,56 +1035,96 @@ function reconstructAbstract(invIndex) {
   return words.filter(Boolean).join(' ');
 }
  
-async function fetchOAPapers(query, limit) {
-  limit = limit || 5;
-  const url = `${OA_BASE}?search=${encodeURIComponent(query)}&per-page=${limit}&select=${OA_SELECT}`;
-  const resp = await fetchWithTimeout(url, 10000);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  const data = await resp.json();
-  return data.results || [];
+function buildQueryTerms(gap, summaryDomain) {
+  return [gap.title, gap.type !== 'Interdisciplinary' ? gap.type : '', summaryDomain || '']
+    .filter(Boolean).join(' ').slice(0, 200);
 }
  
-function buildOAQuery(gap, summaryDomain) {
-  const terms = [gap.title, gap.type !== 'Interdisciplinary' ? gap.type : '', summaryDomain || '']
-    .filter(Boolean).join(' ');
-  return terms.slice(0, 200);
-}
- 
-function renderOAPaper(p) {
+// Normalize an OpenAlex work into the common paper shape used for rendering
+function normalizeOA(p) {
   const authors = (p.authorships || []).slice(0, 3).map(a => a.author?.display_name).filter(Boolean).join(', ')
     + (p.authorships?.length > 3 ? ' et al.' : '');
-  const year    = p.publication_year || '—';
-  const cites   = p.cited_by_count != null ? `${p.cited_by_count} citations` : '';
-  const oa      = p.open_access?.oa_url;
-  const topic   = p.primary_topic?.display_name;
-  const field   = p.primary_topic?.field?.display_name;
-  const tags    = [topic, field].filter(Boolean);
-  const link    = p.doi ? `https://doi.org/${p.doi.replace(/^https?:\/\/doi\.org\//,'')}` : p.id;
+  const topic = p.primary_topic?.display_name;
+  const field = p.primary_topic?.field?.display_name;
   const abstractFull = reconstructAbstract(p.abstract_inverted_index);
-  const abstract = abstractFull ? abstractFull.slice(0, 300) + (abstractFull.length > 300 ? '…' : '') : '';
+  return {
+    title: p.display_name,
+    authors,
+    year: p.publication_year || '—',
+    cites: p.cited_by_count,
+    oaUrl: p.open_access?.oa_url || null,
+    tags: [topic, field].filter(Boolean),
+    link: p.doi ? `https://doi.org/${p.doi.replace(/^https?:\/\/doi\.org\//,'')}` : p.id,
+    abstract: abstractFull ? abstractFull.slice(0, 300) + (abstractFull.length > 300 ? '…' : '') : ''
+  };
+}
  
+// Normalize a Crossref item into the same shape
+function normalizeCrossref(p) {
+  const authors = (p.author || []).slice(0, 3).map(a => [a.given, a.family].filter(Boolean).join(' ')).filter(Boolean).join(', ')
+    + (p.author?.length > 3 ? ' et al.' : '');
+  const year = p['published-print']?.['date-parts']?.[0]?.[0]
+    || p['published-online']?.['date-parts']?.[0]?.[0]
+    || p.created?.['date-parts']?.[0]?.[0] || '—';
+  return {
+    title: Array.isArray(p.title) ? p.title[0] : (p.title || 'Untitled'),
+    authors,
+    year,
+    cites: p['is-referenced-by-count'],
+    oaUrl: null,
+    tags: (p['container-title'] || []).slice(0, 1),
+    link: p.DOI ? `https://doi.org/${p.DOI}` : p.URL,
+    abstract: ''
+  };
+}
+ 
+async function fetchOAPapers(query, limit) {
+  limit = limit || 5;
+  const url = `${OA_BASE}?search=${encodeURIComponent(query)}&per-page=${limit}&select=${OA_SELECT}&mailto=${encodeURIComponent(OA_MAILTO)}`;
+  const data = await fetchJsonWithRetry(url, { timeout: 10000, retries: 2 });
+  return (data.results || []).map(normalizeOA);
+}
+ 
+async function fetchCrossrefPapers(query, limit) {
+  limit = limit || 5;
+  const url = `${CR_BASE}?query=${encodeURIComponent(query)}&rows=${limit}&mailto=${encodeURIComponent(OA_MAILTO)}`;
+  const data = await fetchJsonWithRetry(url, { timeout: 10000, retries: 1 });
+  return (data.message?.items || []).map(normalizeCrossref);
+}
+ 
+// Try OpenAlex first; if it still fails after retries, fall back to Crossref
+async function fetchPapers(query, limit) {
+  try {
+    return await fetchOAPapers(query, limit);
+  } catch(e) {
+    return await fetchCrossrefPapers(query, limit);
+  }
+}
+ 
+function renderPaper(p) {
+  const citesLabel = p.cites != null ? `${p.cites} citations` : '';
   return `<div class="ss-paper">
     <div class="ss-paper-body">
       <div class="ss-paper-title">
-        ${link ? `<a href="${link}" target="_blank" rel="noopener">${p.display_name}</a>` : p.display_name}
+        ${p.link ? `<a href="${p.link}" target="_blank" rel="noopener">${p.title}</a>` : p.title}
       </div>
       <div class="ss-paper-meta">
-        ${authors ? `<span>${authors}</span>` : ''}
-        <span>${year}</span>
-        ${cites ? `<span>${cites}</span>` : ''}
+        ${p.authors ? `<span>${p.authors}</span>` : ''}
+        <span>${p.year}</span>
+        ${citesLabel ? `<span>${citesLabel}</span>` : ''}
       </div>
-      ${abstract ? `<div class="ss-paper-abstract">${abstract}</div>` : ''}
+      ${p.abstract ? `<div class="ss-paper-abstract">${p.abstract}</div>` : ''}
       <div class="ss-paper-tags">
-        ${tags.map(f => `<span class="ss-tag">${f}</span>`).join('')}
-        ${oa ? `<a href="${oa}" target="_blank" rel="noopener" class="ss-tag ss-tag-oa">Open Access PDF</a>` : ''}
+        ${p.tags.map(f => `<span class="ss-tag">${f}</span>`).join('')}
+        ${p.oaUrl ? `<a href="${p.oaUrl}" target="_blank" rel="noopener" class="ss-tag ss-tag-oa">Open Access PDF</a>` : ''}
       </div>
     </div>
-    ${cites ? `<div class="ss-cite">${p.cited_by_count.toLocaleString()}<br><span style="font-size:9px">cited</span></div>` : ''}
+    ${p.cites != null ? `<div class="ss-cite">${p.cites.toLocaleString()}<br><span style="font-size:9px">cited</span></div>` : ''}
   </div>`;
 }
  
-// All gaps fetched in parallel — no staggered delay needed since
-// there's no shared proxy to overwhelm.
+// Requests are staggered slightly (120ms apart) rather than fired
+// as one big burst — this alone cuts 503s from OpenAlex substantially.
 async function loadRelatedPapers(gaps, domain) {
   const container = document.getElementById('relatedContent');
   badge('related', '…');
@@ -1070,13 +1139,16 @@ async function loadRelatedPapers(gaps, domain) {
         <span class="ss-gap-num">GAP ${String(i+1).padStart(2,'0')}</span>
         ${gap.title}
       </div>
-      <div class="ss-loading" id="ss-load-${i}"><div class="ss-spinner"></div> Searching OpenAlex…</div>
+      <div class="ss-loading" id="ss-load-${i}"><div class="ss-spinner"></div> Searching for related literature…</div>
       <div id="ss-results-${i}"></div>`;
     container.appendChild(section);
   });
  
   const results = await Promise.allSettled(
-    gaps.map(gap => fetchOAPapers(buildOAQuery(gap, domain), 5))
+    gaps.map(async (gap, i) => {
+      await sleep(i * 120);
+      return fetchPapers(buildQueryTerms(gap, domain), 5);
+    })
   );
  
   let totalFound = 0;
@@ -1090,7 +1162,7 @@ async function loadRelatedPapers(gaps, domain) {
         resEl.innerHTML = `<p class="ss-none">No results found for this gap. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try wider query</button></p>`;
       } else {
         totalFound += papers.length;
-        resEl.innerHTML = `<div class="ss-papers">${papers.map(renderOAPaper).join('')}</div>`;
+        resEl.innerHTML = `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`;
       }
     } else {
       resEl.innerHTML = `<div class="ss-err">Failed to load: ${result.reason?.message || 'unknown error'}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Retry</button></div>`;
@@ -1100,7 +1172,7 @@ async function loadRelatedPapers(gaps, domain) {
   badge('related', totalFound || '0');
 }
  
-// Retry with a shorter, broader query
+// Retry with a shorter, broader query — still tries OpenAlex then Crossref
 async function retrySSGap(i) {
   if (!analysisData) return;
   const gap = analysisData.gaps[i];
@@ -1110,10 +1182,10 @@ async function retrySSGap(i) {
   resEl.innerHTML = '';
   try {
     const shortTitle = gap.title.split(' ').slice(0, 4).join(' ');
-    const papers = await fetchOAPapers(`${shortTitle} ${gap.type} research`, 5);
+    const papers = await fetchPapers(`${shortTitle} ${gap.type} research`, 5);
     loadEl.style.display = 'none';
     resEl.innerHTML = papers.length
-      ? `<div class="ss-papers">${papers.map(renderOAPaper).join('')}</div>`
+      ? `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`
       : `<p class="ss-none">Still no results — gap may be too novel or niche.</p>`;
   } catch(err) {
     loadEl.style.display = 'none';
