@@ -410,9 +410,9 @@ header {
  
 <!-- ══ RELATED PAPERS ══ -->
 <div class="panel" id="panel-related">
-  <div class="shd"><h2>Related Papers</h2><span class="stag" id="meta-related">Via OpenAlex · Free · No key needed</span></div>
+  <div class="shd"><h2>Related Papers</h2><span class="stag" id="meta-related">Via Crossref · Free · No key needed</span></div>
   <p class="ss-intro">
-    For each detected gap, ResearchLens searches <a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a> to surface the most relevant existing literature — helping you understand what's already been done and where the white space truly lies.
+    For each detected gap, ResearchLens searches <a href="https://www.crossref.org" target="_blank" rel="noopener">Crossref</a> to surface the most relevant existing literature — helping you understand what's already been done and where the white space truly lies.
     <br><span style="opacity:0.7">Results load automatically after analysis. Click a paper title to open it.</span>
   </p>
   <div id="relatedContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
@@ -979,17 +979,15 @@ async function extractPdfText(file) {
 }
  
 // ════════════════════════════════
-// RELATED PAPERS — OPENALEX (primary) + CROSSREF (fallback)
-// No proxy needed: both APIs send proper CORS headers. OpenAlex
-// 5xx responses are usually transient load-shedding, so we retry
-// with backoff before falling back to Crossref, and we join
-// OpenAlex's "polite pool" (mailto param) which gets a much better
-// response rate than anonymous requests.
+// RELATED PAPERS — CROSSREF
+// Switched from OpenAlex: as of Feb 2026, OpenAlex requires an API
+// key for real usage (free tier is 100 credits then errors — this
+// is what was causing the persistent failures). Crossref remains
+// fully open with no authentication required, and sends proper CORS
+// headers, so it works directly from the browser.
 // ════════════════════════════════
-const OA_BASE   = 'https://api.openalex.org/works';
-const OA_SELECT = 'id,doi,display_name,authorships,publication_year,cited_by_count,open_access,primary_topic,abstract_inverted_index';
-const OA_MAILTO = 'researchlens.app@gmail.com'; // polite-pool contact — improves OpenAlex rate limits
 const CR_BASE   = 'https://api.crossref.org/works';
+const CR_MAILTO = 'researchlens.app@gmail.com'; // polite-pool contact — routes to Crossref's priority servers
  
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
  
@@ -1003,7 +1001,7 @@ async function fetchWithTimeout(url, ms) {
   } catch(e) { clearTimeout(timer); throw e; }
 }
  
-// Fetch with automatic retry on 429/5xx (exponential backoff: 400ms, 1200ms)
+// Fetch with automatic retry on 429/5xx (exponential backoff: 500ms, 1500ms)
 async function fetchJsonWithRetry(url, opts) {
   opts = opts || {};
   const timeout = opts.timeout || 10000;
@@ -1015,24 +1013,19 @@ async function fetchJsonWithRetry(url, opts) {
       if (resp.ok) return await resp.json();
       lastErr = new Error(`HTTP ${resp.status}`);
       if ((resp.status === 429 || resp.status >= 500) && attempt < retries) {
-        await sleep(400 * Math.pow(3, attempt)); continue;
+        await sleep(500 * Math.pow(3, attempt)); continue;
       }
       throw lastErr;
     } catch(e) {
       lastErr = e;
-      if (attempt < retries) { await sleep(400 * Math.pow(3, attempt)); continue; }
+      if (attempt < retries) { await sleep(500 * Math.pow(3, attempt)); continue; }
     }
   }
   throw lastErr || new Error('Request failed');
 }
  
-function reconstructAbstract(invIndex) {
-  if (!invIndex) return '';
-  const words = [];
-  for (const [word, positions] of Object.entries(invIndex)) {
-    positions.forEach(pos => { words[pos] = word; });
-  }
-  return words.filter(Boolean).join(' ');
+function stripTags(html) {
+  return (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
  
 function buildQueryTerms(gap, summaryDomain) {
@@ -1040,65 +1033,31 @@ function buildQueryTerms(gap, summaryDomain) {
     .filter(Boolean).join(' ').slice(0, 200);
 }
  
-// Normalize an OpenAlex work into the common paper shape used for rendering
-function normalizeOA(p) {
-  const authors = (p.authorships || []).slice(0, 3).map(a => a.author?.display_name).filter(Boolean).join(', ')
-    + (p.authorships?.length > 3 ? ' et al.' : '');
-  const topic = p.primary_topic?.display_name;
-  const field = p.primary_topic?.field?.display_name;
-  const abstractFull = reconstructAbstract(p.abstract_inverted_index);
-  return {
-    title: p.display_name,
-    authors,
-    year: p.publication_year || '—',
-    cites: p.cited_by_count,
-    oaUrl: p.open_access?.oa_url || null,
-    tags: [topic, field].filter(Boolean),
-    link: p.doi ? `https://doi.org/${p.doi.replace(/^https?:\/\/doi\.org\//,'')}` : p.id,
-    abstract: abstractFull ? abstractFull.slice(0, 300) + (abstractFull.length > 300 ? '…' : '') : ''
-  };
-}
- 
-// Normalize a Crossref item into the same shape
-function normalizeCrossref(p) {
+// Normalize a Crossref item into the common paper shape used for rendering
+function normalizePaper(p) {
   const authors = (p.author || []).slice(0, 3).map(a => [a.given, a.family].filter(Boolean).join(' ')).filter(Boolean).join(', ')
     + (p.author?.length > 3 ? ' et al.' : '');
   const year = p['published-print']?.['date-parts']?.[0]?.[0]
     || p['published-online']?.['date-parts']?.[0]?.[0]
     || p.created?.['date-parts']?.[0]?.[0] || '—';
+  const abstractFull = stripTags(p.abstract);
   return {
-    title: Array.isArray(p.title) ? p.title[0] : (p.title || 'Untitled'),
+    title: (Array.isArray(p.title) ? p.title[0] : p.title) || 'Untitled',
     authors,
     year,
     cites: p['is-referenced-by-count'],
     oaUrl: null,
     tags: (p['container-title'] || []).slice(0, 1),
     link: p.DOI ? `https://doi.org/${p.DOI}` : p.URL,
-    abstract: ''
+    abstract: abstractFull ? abstractFull.slice(0, 300) + (abstractFull.length > 300 ? '…' : '') : ''
   };
 }
  
-async function fetchOAPapers(query, limit) {
-  limit = limit || 5;
-  const url = `${OA_BASE}?search=${encodeURIComponent(query)}&per-page=${limit}&select=${OA_SELECT}&mailto=${encodeURIComponent(OA_MAILTO)}`;
-  const data = await fetchJsonWithRetry(url, { timeout: 10000, retries: 2 });
-  return (data.results || []).map(normalizeOA);
-}
- 
-async function fetchCrossrefPapers(query, limit) {
-  limit = limit || 5;
-  const url = `${CR_BASE}?query=${encodeURIComponent(query)}&rows=${limit}&mailto=${encodeURIComponent(OA_MAILTO)}`;
-  const data = await fetchJsonWithRetry(url, { timeout: 10000, retries: 1 });
-  return (data.message?.items || []).map(normalizeCrossref);
-}
- 
-// Try OpenAlex first; if it still fails after retries, fall back to Crossref
 async function fetchPapers(query, limit) {
-  try {
-    return await fetchOAPapers(query, limit);
-  } catch(e) {
-    return await fetchCrossrefPapers(query, limit);
-  }
+  limit = limit || 5;
+  const url = `${CR_BASE}?query=${encodeURIComponent(query)}&rows=${limit}&mailto=${encodeURIComponent(CR_MAILTO)}`;
+  const data = await fetchJsonWithRetry(url, { timeout: 10000, retries: 2 });
+  return (data.message?.items || []).map(normalizePaper);
 }
  
 function renderPaper(p) {
@@ -1123,8 +1082,8 @@ function renderPaper(p) {
   </div>`;
 }
  
-// Requests are staggered slightly (120ms apart) rather than fired
-// as one big burst — this alone cuts 503s from OpenAlex substantially.
+// Requests staggered slightly (150ms apart) to stay well under
+// Crossref's 50 req/sec limit and avoid tripping any burst detection.
 async function loadRelatedPapers(gaps, domain) {
   const container = document.getElementById('relatedContent');
   badge('related', '…');
@@ -1146,7 +1105,7 @@ async function loadRelatedPapers(gaps, domain) {
  
   const results = await Promise.allSettled(
     gaps.map(async (gap, i) => {
-      await sleep(i * 120);
+      await sleep(i * 150);
       return fetchPapers(buildQueryTerms(gap, domain), 5);
     })
   );
@@ -1172,7 +1131,7 @@ async function loadRelatedPapers(gaps, domain) {
   badge('related', totalFound || '0');
 }
  
-// Retry with a shorter, broader query — still tries OpenAlex then Crossref
+// Retry with a shorter, broader query
 async function retrySSGap(i) {
   if (!analysisData) return;
   const gap = analysisData.gaps[i];
