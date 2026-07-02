@@ -248,6 +248,7 @@ header {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .ss-gap-num { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; color: var(--muted); background: var(--cream); padding: 3px 7px; border-radius: 3px; }
+.ss-subhead { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
 .ss-loading { font-size: 12px; color: var(--muted); font-style: italic; padding: 10px 0; display: flex; align-items: center; gap: 8px; }
 .ss-spinner { width: 12px; height: 12px; border: 2px solid var(--rule); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -300,7 +301,6 @@ header {
  
 <header>
   <div class="logo"><span class="logo-dot"></span>ResearchLens</div>
-  <span class="header-tag">Gap Analysis Suite · Free</span>
 </header>
  
 <nav class="top-nav">
@@ -359,42 +359,42 @@ header {
 <!-- ══ SUMMARY ══ -->
 <div class="panel" id="panel-summary">
   <div class="shd"><h2>Paper Summary</h2><span class="stag" id="meta-summary"></span></div>
-  <div id="summaryContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+  <div id="summaryContent"><p style="color:var(--muted);font-size:13px">Upload a paper and run an analysis to see its summary here.</p></div>
 </div>
  
 <!-- ══ GAPS ══ -->
 <div class="panel" id="panel-gaps">
   <div class="shd"><h2>Research Gap Detection</h2><span class="stag" id="meta-gaps"></span></div>
-  <div class="gaps-grid" id="gapsGrid"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+  <div class="gaps-grid" id="gapsGrid"><p style="color:var(--muted);font-size:13px">Run an analysis to see the research gaps we detect.</p></div>
   <ul class="opp-list" id="oppList" style="display:none"></ul>
 </div>
  
 <!-- ══ FUTURE WORK ══ -->
 <div class="panel" id="panel-future">
   <div class="shd"><h2>Future Work Extraction</h2><span class="stag" id="meta-future"></span></div>
-  <div class="fw-list" id="fwList"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+  <div class="fw-list" id="fwList"><p style="color:var(--muted);font-size:13px">Run an analysis to see suggested future work directions.</p></div>
 </div>
  
 <!-- ══ RESEARCH QUESTIONS ══ -->
 <div class="panel" id="panel-questions">
   <div class="shd"><h2>Research Question Generator</h2><span class="stag" id="meta-questions"></span></div>
-  <div class="rq-grid" id="rqGrid"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+  <div class="rq-grid" id="rqGrid"><p style="color:var(--muted);font-size:13px">Run an analysis to generate research questions from the detected gaps.</p></div>
 </div>
  
 <!-- ══ HEATMAP ══ -->
 <div class="panel" id="panel-heatmap">
   <div class="shd"><h2>Gap Intensity Heatmap</h2><span class="stag">Type × Severity Matrix</span></div>
-  <div id="heatmapContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+  <div id="heatmapContent"><p style="color:var(--muted);font-size:13px">Run an analysis to see the gap intensity heatmap.</p></div>
 </div>
  
 <!-- ══ RELATED PAPERS ══ -->
 <div class="panel" id="panel-related">
-  <div class="shd"><h2>Related Papers</h2><span class="stag" id="meta-related">Via Crossref · Free · No key needed</span></div>
+  <div class="shd"><h2>Related Papers</h2></div>
   <p class="ss-intro">
-    For each detected gap, ResearchLens searches <a href="https://www.crossref.org" target="_blank" rel="noopener">Crossref</a> to surface the most relevant existing literature — helping you understand what's already been done and where the white space truly lies.
-    <br><span style="opacity:0.7">Results load automatically after analysis. Click a paper title to open it.</span>
+    ResearchLens searches Crossref's open literature index for each gap it finds — first to surface what's already been published on the topic, then again to specifically look for work that proposes a method, framework, or solution addressing it. This gives you a quick read on both the existing landscape and how close (or far) the field already is from closing the gap.
+    <br><span style="opacity:0.7">Results load automatically after each analysis — just click a paper's title to open it.</span>
   </p>
-  <div id="relatedContent"><p style="color:var(--muted);font-size:13px">Run an analysis first.</p></div>
+  <div id="relatedContent"><p style="color:var(--muted);font-size:13px">Run an analysis to see related literature and potential solutions for each gap.</p></div>
 </div>
  
 <!-- ══ PROPOSAL ══ -->
@@ -986,6 +986,13 @@ function buildQueryTerms(gap, summaryDomain) {
     .filter(Boolean).join(' ').slice(0, 200);
 }
  
+// Biases the search toward papers that propose a fix, not just discuss the topic —
+// pulls in the suggested approach text plus solution-oriented keywords.
+function buildSolutionQueryTerms(gap, summaryDomain) {
+  return [gap.suggestedApproach || gap.title, summaryDomain || '', 'method approach solution framework']
+    .filter(Boolean).join(' ').slice(0, 200);
+}
+ 
 // Normalize a Crossref item into the common paper shape used for rendering
 function normalizePaper(p) {
   const authors = (p.author || []).slice(0, 3).map(a => [a.given, a.family].filter(Boolean).join(' ')).filter(Boolean).join(', ')
@@ -1051,8 +1058,12 @@ async function loadRelatedPapers(gaps, domain) {
         <span class="ss-gap-num">GAP ${String(i+1).padStart(2,'0')}</span>
         ${gap.title}
       </div>
+      <div class="ss-subhead">Related Literature</div>
       <div class="ss-loading" id="ss-load-${i}"><div class="ss-spinner"></div> Searching for related literature…</div>
-      <div id="ss-results-${i}"></div>`;
+      <div id="ss-results-${i}"></div>
+      <div class="ss-subhead" style="margin-top:16px">Potential Solutions &amp; Approaches</div>
+      <div class="ss-loading" id="ss-sol-load-${i}"><div class="ss-spinner"></div> Searching for papers that address this gap…</div>
+      <div id="ss-sol-results-${i}"></div>`;
     container.appendChild(section);
   });
  
@@ -1060,6 +1071,13 @@ async function loadRelatedPapers(gaps, domain) {
     gaps.map(async (gap, i) => {
       await sleep(i * 150);
       return fetchPapers(buildQueryTerms(gap, domain), 5);
+    })
+  );
+ 
+  const solutionResults = await Promise.allSettled(
+    gaps.map(async (gap, i) => {
+      await sleep(i * 150);
+      return fetchPapers(buildSolutionQueryTerms(gap, domain), 5);
     })
   );
  
@@ -1078,6 +1096,23 @@ async function loadRelatedPapers(gaps, domain) {
       }
     } else {
       resEl.innerHTML = `<div class="ss-err">Failed to load: ${result.reason?.message || 'unknown error'}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Retry</button></div>`;
+    }
+  });
+ 
+  solutionResults.forEach((result, i) => {
+    document.getElementById(`ss-sol-load-${i}`).style.display = 'none';
+    const resEl = document.getElementById(`ss-sol-results-${i}`);
+ 
+    if (result.status === 'fulfilled') {
+      const papers = result.value;
+      if (papers.length === 0) {
+        resEl.innerHTML = `<p class="ss-none">No solution-oriented papers found yet. <button class="ss-refetch-btn" onclick="retrySSGapSolutions(${i})">Try wider query</button></p>`;
+      } else {
+        totalFound += papers.length;
+        resEl.innerHTML = `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`;
+      }
+    } else {
+      resEl.innerHTML = `<div class="ss-err">Failed to load: ${result.reason?.message || 'unknown error'}. <button class="ss-refetch-btn" onclick="retrySSGapSolutions(${i})">Retry</button></div>`;
     }
   });
  
@@ -1102,6 +1137,27 @@ async function retrySSGap(i) {
   } catch(err) {
     loadEl.style.display = 'none';
     resEl.innerHTML = `<div class="ss-err">Retry failed: ${err.message}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try again</button></div>`;
+  }
+}
+ 
+// Retry the solution-oriented search with a broader query
+async function retrySSGapSolutions(i) {
+  if (!analysisData) return;
+  const gap = analysisData.gaps[i];
+  const loadEl = document.getElementById(`ss-sol-load-${i}`);
+  const resEl  = document.getElementById(`ss-sol-results-${i}`);
+  loadEl.style.display = 'flex';
+  resEl.innerHTML = '';
+  try {
+    const shortApproach = (gap.suggestedApproach || gap.title).split(' ').slice(0, 6).join(' ');
+    const papers = await fetchPapers(`${shortApproach} solution method`, 5);
+    loadEl.style.display = 'none';
+    resEl.innerHTML = papers.length
+      ? `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`
+      : `<p class="ss-none">Still no results — this gap may not yet have a published solution.</p>`;
+  } catch(err) {
+    loadEl.style.display = 'none';
+    resEl.innerHTML = `<div class="ss-err">Retry failed: ${err.message}. <button class="ss-refetch-btn" onclick="retrySSGapSolutions(${i})">Try again</button></div>`;
   }
 }
 </script>
