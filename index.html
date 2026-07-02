@@ -1042,8 +1042,11 @@ function renderPaper(p) {
   </div>`;
 }
  
-// Requests staggered slightly (150ms apart) to stay well under
-// Crossref's 50 req/sec limit and avoid tripping any burst detection.
+// Both batches (related + solution searches) are kicked off together via
+// Promise.all so they run concurrently — previously the solution batch only
+// started after the related batch fully finished, doubling wait time for
+// no reason. Staggering within each batch still keeps us well under
+// Crossref's 50 req/sec limit.
 async function loadRelatedPapers(gaps, domain) {
   const container = document.getElementById('relatedContent');
   badge('related', '…');
@@ -1067,19 +1070,20 @@ async function loadRelatedPapers(gaps, domain) {
     container.appendChild(section);
   });
  
-  const results = await Promise.allSettled(
-    gaps.map(async (gap, i) => {
-      await sleep(i * 150);
-      return fetchPapers(buildQueryTerms(gap, domain), 5);
-    })
-  );
- 
-  const solutionResults = await Promise.allSettled(
-    gaps.map(async (gap, i) => {
-      await sleep(i * 150);
-      return fetchPapers(buildSolutionQueryTerms(gap, domain), 5);
-    })
-  );
+  const [results, solutionResults] = await Promise.all([
+    Promise.allSettled(
+      gaps.map(async (gap, i) => {
+        await sleep(i * 100);
+        return fetchPapers(buildQueryTerms(gap, domain), 5);
+      })
+    ),
+    Promise.allSettled(
+      gaps.map(async (gap, i) => {
+        await sleep(i * 100 + 50);
+        return fetchPapers(buildSolutionQueryTerms(gap, domain), 4);
+      })
+    )
+  ]);
  
   let totalFound = 0;
   results.forEach((result, i) => {
