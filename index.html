@@ -33,30 +33,13 @@
 html { scroll-behavior: smooth; }
 body { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; font-size: 14px; line-height: 1.6; }
  
-/* ── API KEY BANNER ── */
+/* ── STATUS BANNER ── */
 .apikey-banner {
   background: #1a1714; color: var(--white);
   padding: 10px 40px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;
 }
-.apikey-banner label { opacity: 0.6; white-space: nowrap; font-size: 12px; }
-.apikey-input {
-  flex: 1; min-width: 180px; max-width: 340px;
-  background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.2);
-  color: var(--white); padding: 6px 11px; border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.04em;
-}
-.apikey-input::placeholder { opacity: 0.35; }
-.apikey-input:focus { outline: none; border-color: rgba(255,255,255,0.55); }
-.apikey-save-btn {
-  background: var(--accent); color: var(--white); border: none;
-  padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600;
-  cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; transition: opacity 0.15s;
-}
-.apikey-save-btn:hover { opacity: 0.85; }
-.apikey-status { font-size: 11px; opacity: 0.55; white-space: nowrap; }
+.apikey-status { font-size: 12px; opacity: 0.7; }
 .apikey-status.ok { color: #5ee87a; opacity: 1; }
-.apikey-link { color: rgba(255,255,255,0.45); font-size: 11px; text-decoration: underline; white-space: nowrap; margin-left: auto; }
-.apikey-link:hover { color: white; }
  
 /* ── HEADER ── */
 header {
@@ -310,18 +293,14 @@ header {
 <body>
 <div class="tooltip" id="tooltip"></div>
  
-<!-- API KEY BANNER -->
+<!-- STATUS BANNER (no key entry needed — backend holds the key) -->
 <div class="apikey-banner">
-  <label for="apikeyInput">Groq API Key (Free)</label>
-  <input class="apikey-input" id="apikeyInput" type="password" placeholder="gsk_…" autocomplete="off" spellcheck="false">
-  <button class="apikey-save-btn" id="apikeySaveBtn">Save for session</button>
-  <span class="apikey-status" id="apikeyStatus">Not set</span>
-  <a class="apikey-link" href="https://console.groq.com/keys" target="_blank" rel="noopener">Get free key at console.groq.com ↗</a>
+  <span class="apikey-status ok">✓ Ready</span>
 </div>
  
 <header>
   <div class="logo"><span class="logo-dot"></span>ResearchLens</div>
-  <span class="header-tag">Gap Analysis Suite · Groq AI · Free</span>
+  <span class="header-tag">Gap Analysis Suite · Free</span>
 </header>
  
 <nav class="top-nav">
@@ -338,7 +317,7 @@ header {
 <!-- ══ UPLOAD ══ -->
 <div class="panel active" id="panel-upload">
   <p style="color:var(--muted);font-size:13px;margin-bottom:28px;max-width:620px;line-height:1.7">
-    Upload one or more research PDFs for a full AI-powered analysis using <strong>Groq (Llama 3.3 70B)</strong> — completely free. Get your free API key at <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent)">console.groq.com/keys</a> and paste it in the banner above.
+    Upload one or more research PDFs for a full AI-powered analysis — completely free.
   </p>
   <div class="upload-zone" id="uploadZone">
     <input type="file" id="fileInput" accept=".pdf" multiple>
@@ -439,31 +418,11 @@ header {
  
 <script>
 // ════════════════════════════════
-// API KEY
+// BACKEND CONFIG
 // ════════════════════════════════
-const apikeyInput   = document.getElementById('apikeyInput');
-const apikeySaveBtn = document.getElementById('apikeySaveBtn');
-const apikeyStatus  = document.getElementById('apikeyStatus');
- 
-function getApiKey() { return sessionStorage.getItem('rg_groq_key') || ''; }
-function refreshKeyUI(k) {
-  if (k) { apikeyStatus.textContent = '✓ Key saved'; apikeyStatus.className = 'apikey-status ok'; apikeyInput.value = k.slice(0,12) + '…'; }
-  else    { apikeyStatus.textContent = 'Not set'; apikeyStatus.className = 'apikey-status'; }
-}
-refreshKeyUI(getApiKey());
-apikeySaveBtn.addEventListener('click', () => {
-  const v = apikeyInput.value.trim();
-  if (!v || v.endsWith('…')) return;
-  sessionStorage.setItem('rg_groq_key', v);
-  refreshKeyUI(v);
-});
-apikeyInput.addEventListener('keydown', e => { if (e.key === 'Enter') apikeySaveBtn.click(); });
- 
-function getGroqKey() {
-  const k = getApiKey();
-  if (!k) throw new Error('No API key set. Get your free Groq key at console.groq.com and enter it in the banner above.');
-  return k;
-}
+// All AI calls go through the backend proxy.
+// The backend holds the credentials — nothing secret lives here.
+const BACKEND_URL = 'https://researchlens-jced.onrender.com/api/analyze';
  
 // ════════════════════════════════
 // TABS
@@ -592,10 +551,6 @@ Be specific — cite actual paper content. Make questions novel and actionable.`
 // ════════════════════════════════
 // ANALYZE
 // ════════════════════════════════
-function toB64(file) {
-  return new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
-}
- 
 analyzeBtn.addEventListener('click', async () => {
   errBox.className = 'err';
   loadWrap.className = 'load-wrap on';
@@ -617,10 +572,9 @@ analyzeBtn.addEventListener('click', async () => {
     const label = uploadedFiles.length === 1 ? 'this research paper' : `these ${uploadedFiles.length} research papers`;
     const fullPrompt = `${buildPrompt(document.getElementById('depthSelect').value)}\n\nAnalyze ${label} fully based on the extracted text below. Return only the JSON as specified.\n\n${combinedText}`;
  
-    const key = getGroqKey();
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const resp = await fetch(BACKEND_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: fullPrompt }],
@@ -629,7 +583,7 @@ analyzeBtn.addEventListener('click', async () => {
       })
     });
  
-    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || `API error ${resp.status}`); }
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || `Request failed (${resp.status})`); }
     const raw = await resp.json();
     const txt = (raw.choices?.[0]?.message?.content || '').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
@@ -892,11 +846,10 @@ Suggested Approach: ${gap.suggestedApproach}
 Paper context: ${analysisData.summary?.overview||''}`;
  
   try {
-    const key = getGroqKey();
     const prompt = `${sysPr}\n\n${userMsg}`;
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const resp = await fetch(BACKEND_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
@@ -904,7 +857,7 @@ Paper context: ${analysisData.summary?.overview||''}`;
         max_tokens: 2048
       })
     });
-    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || `API error ${resp.status}`); }
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || `Request failed (${resp.status})`); }
     const raw = await resp.json();
     const txt = (raw.choices?.[0]?.message?.content || '').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
