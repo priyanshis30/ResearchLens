@@ -1042,11 +1042,33 @@ function renderPaper(p) {
   </div>`;
 }
  
-// Both batches (related + solution searches) are kicked off together via
-// Promise.all so they run concurrently — previously the solution batch only
-// started after the related batch fully finished, doubling wait time for
-// no reason. Staggering within each batch still keeps us well under
-// Crossref's 50 req/sec limit.
+// Each request renders into the page the instant IT resolves, instead of
+// the whole panel waiting for the slowest of ~2×N requests to finish.
+// Requests are kicked off in order (related-1, solution-1, related-2,
+// solution-2, ...) with a small stagger, so that's roughly the order
+// results appear in too — but nothing blocks anything else.
+function updateTotalBadge() {
+  const count = document.querySelectorAll('#relatedContent .ss-paper').length;
+  badge('related', count || '0');
+}
+ 
+function handlePaperResult(loadElId, resultElId, papers, retryFnName, i, emptyMsg) {
+  document.getElementById(loadElId).style.display = 'none';
+  const resEl = document.getElementById(resultElId);
+  if (papers.length === 0) {
+    resEl.innerHTML = `<p class="ss-none">${emptyMsg} <button class="ss-refetch-btn" onclick="${retryFnName}(${i})">Try wider query</button></p>`;
+  } else {
+    resEl.innerHTML = `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`;
+  }
+  updateTotalBadge();
+}
+ 
+function handlePaperError(loadElId, resultElId, err, retryFnName, i) {
+  document.getElementById(loadElId).style.display = 'none';
+  document.getElementById(resultElId).innerHTML =
+    `<div class="ss-err">Failed to load: ${err?.message || 'unknown error'}. <button class="ss-refetch-btn" onclick="${retryFnName}(${i})">Retry</button></div>`;
+}
+ 
 async function loadRelatedPapers(gaps, domain) {
   const container = document.getElementById('relatedContent');
   badge('related', '…');
@@ -1070,57 +1092,23 @@ async function loadRelatedPapers(gaps, domain) {
     container.appendChild(section);
   });
  
-  const [results, solutionResults] = await Promise.all([
-    Promise.allSettled(
-      gaps.map(async (gap, i) => {
-        await sleep(i * 100);
-        return fetchPapers(buildQueryTerms(gap, domain), 5);
-      })
-    ),
-    Promise.allSettled(
-      gaps.map(async (gap, i) => {
-        await sleep(i * 100 + 50);
-        return fetchPapers(buildSolutionQueryTerms(gap, domain), 4);
-      })
-    )
-  ]);
+  const tasks = [];
+  gaps.forEach((gap, i) => {
+    const relatedTask = sleep(i * 120)
+      .then(() => fetchPapers(buildQueryTerms(gap, domain), 5))
+      .then(papers => handlePaperResult(`ss-load-${i}`, `ss-results-${i}`, papers, 'retrySSGap', i, 'No results found for this gap.'))
+      .catch(err => handlePaperError(`ss-load-${i}`, `ss-results-${i}`, err, 'retrySSGap', i));
  
-  let totalFound = 0;
-  results.forEach((result, i) => {
-    document.getElementById(`ss-load-${i}`).style.display = 'none';
-    const resEl = document.getElementById(`ss-results-${i}`);
+    const solutionTask = sleep(i * 120 + 60)
+      .then(() => fetchPapers(buildSolutionQueryTerms(gap, domain), 4))
+      .then(papers => handlePaperResult(`ss-sol-load-${i}`, `ss-sol-results-${i}`, papers, 'retrySSGapSolutions', i, 'No solution-oriented papers found yet.'))
+      .catch(err => handlePaperError(`ss-sol-load-${i}`, `ss-sol-results-${i}`, err, 'retrySSGapSolutions', i));
  
-    if (result.status === 'fulfilled') {
-      const papers = result.value;
-      if (papers.length === 0) {
-        resEl.innerHTML = `<p class="ss-none">No results found for this gap. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try wider query</button></p>`;
-      } else {
-        totalFound += papers.length;
-        resEl.innerHTML = `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`;
-      }
-    } else {
-      resEl.innerHTML = `<div class="ss-err">Failed to load: ${result.reason?.message || 'unknown error'}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Retry</button></div>`;
-    }
+    tasks.push(relatedTask, solutionTask);
   });
  
-  solutionResults.forEach((result, i) => {
-    document.getElementById(`ss-sol-load-${i}`).style.display = 'none';
-    const resEl = document.getElementById(`ss-sol-results-${i}`);
- 
-    if (result.status === 'fulfilled') {
-      const papers = result.value;
-      if (papers.length === 0) {
-        resEl.innerHTML = `<p class="ss-none">No solution-oriented papers found yet. <button class="ss-refetch-btn" onclick="retrySSGapSolutions(${i})">Try wider query</button></p>`;
-      } else {
-        totalFound += papers.length;
-        resEl.innerHTML = `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`;
-      }
-    } else {
-      resEl.innerHTML = `<div class="ss-err">Failed to load: ${result.reason?.message || 'unknown error'}. <button class="ss-refetch-btn" onclick="retrySSGapSolutions(${i})">Retry</button></div>`;
-    }
-  });
- 
-  badge('related', totalFound || '0');
+  await Promise.allSettled(tasks);
+  updateTotalBadge();
 }
  
 // Retry with a shorter, broader query
@@ -1138,6 +1126,7 @@ async function retrySSGap(i) {
     resEl.innerHTML = papers.length
       ? `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`
       : `<p class="ss-none">Still no results — gap may be too novel or niche.</p>`;
+    updateTotalBadge();
   } catch(err) {
     loadEl.style.display = 'none';
     resEl.innerHTML = `<div class="ss-err">Retry failed: ${err.message}. <button class="ss-refetch-btn" onclick="retrySSGap(${i})">Try again</button></div>`;
@@ -1159,6 +1148,7 @@ async function retrySSGapSolutions(i) {
     resEl.innerHTML = papers.length
       ? `<div class="ss-papers">${papers.map(renderPaper).join('')}</div>`
       : `<p class="ss-none">Still no results — this gap may not yet have a published solution.</p>`;
+    updateTotalBadge();
   } catch(err) {
     loadEl.style.display = 'none';
     resEl.innerHTML = `<div class="ss-err">Retry failed: ${err.message}. <button class="ss-refetch-btn" onclick="retrySSGapSolutions(${i})">Try again</button></div>`;
