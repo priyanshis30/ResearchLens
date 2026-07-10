@@ -51,6 +51,29 @@ header {
 .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .header-tag { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.4; }
  
+/* ── DOWNLOAD REPORT ── */
+.dl-wrap { position: relative; margin-left: auto; }
+.dl-btn {
+  background: var(--accent); color: var(--white); border: none; border-radius: 4px;
+  padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  display: none; align-items: center; gap: 6px; transition: background 0.15s;
+}
+.dl-btn.show { display: inline-flex; }
+.dl-btn:hover { background: var(--accent-hover); }
+.dl-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.dl-menu {
+  position: absolute; top: 100%; right: 0; margin-top: 6px; background: var(--white);
+  border: 1px solid var(--rule); border-radius: 6px; box-shadow: var(--shadow);
+  min-width: 190px; display: none; z-index: 300; overflow: hidden;
+}
+.dl-menu.open { display: block; }
+.dl-menu button {
+  width: 100%; text-align: left; background: none; border: none; padding: 10px 14px;
+  font-size: 13px; color: var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px;
+}
+.dl-menu button:hover { background: var(--cream); }
+.dl-menu-sep { height: 1px; background: var(--rule); }
+ 
 /* ── TOP NAV ── */
 .top-nav {
   background: var(--white); border-bottom: 1px solid var(--rule);
@@ -301,6 +324,14 @@ header {
  
 <header>
   <div class="logo"><span class="logo-dot"></span>ResearchLens</div>
+  <div class="dl-wrap" id="dlWrap">
+    <button class="dl-btn" id="dlBtn">⬇ Download Report</button>
+    <div class="dl-menu" id="dlMenu">
+      <button id="dlPdfBtn">📄 Download as PDF</button>
+      <div class="dl-menu-sep"></div>
+      <button id="dlDocxBtn">📝 Download as Word (.docx)</button>
+    </div>
+  </div>
 </header>
  
 <nav class="top-nav">
@@ -607,6 +638,8 @@ analyzeBtn.addEventListener('click', async () => {
 // RENDER ALL
 // ════════════════════════════════
 function renderAll(d) {
+  generatedProposals = {};
+  dlBtn.classList.add('show');
   renderSummary(d);
   renderGaps(d);
   renderFutureWork(d);
@@ -873,6 +906,7 @@ Paper context: ${analysisData.summary?.overview||''}`;
  
 let lastProposalText = '';
 function renderProposal(p, gap, idx) {
+  generatedProposals[idx] = { gap, idx, p };
   const secs = [
     { t: 'Proposed Title', c: `<em>${p.title}</em>` },
     { t: 'Background', c: p.background },
@@ -900,6 +934,142 @@ copyPropBtn.addEventListener('click', () => {
     setTimeout(() => { copyPropBtn.textContent = 'Copy text'; }, 2000);
   });
 });
+ 
+// ════════════════════════════════
+// DOWNLOAD REPORT
+// ════════════════════════════════
+let generatedProposals = {}; // idx -> {gap, idx, p}
+ 
+const dlBtn  = document.getElementById('dlBtn');
+const dlMenu = document.getElementById('dlMenu');
+dlBtn.addEventListener('click', (e) => { e.stopPropagation(); dlMenu.classList.toggle('open'); });
+document.addEventListener('click', () => dlMenu.classList.remove('open'));
+ 
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+ 
+function escapeHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+ 
+function buildReportHTML(d) {
+  const s = d.summary || {};
+  const gaps = d.gaps || [];
+  const fw = d.futureWork || [];
+  const rqs = d.researchQuestions || [];
+  const propsArr = Object.values(generatedProposals);
+ 
+  const claimsHtml = (s.keyClaims||[]).map(c=>`<li>${escapeHtml(c)}</li>`).join('');
+  const oppHtml = (d.futureOpportunities||[]).map(o=>`<li>${escapeHtml(o)}</li>`).join('');
+ 
+  const gapsHtml = gaps.map((g,i) => `
+    <div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #ddd;">
+      <div style="font-weight:700;font-size:14px;">GAP ${String(i+1).padStart(2,'0')} — ${escapeHtml(g.title)}
+        <span style="font-size:11px;text-transform:uppercase;color:#b83232;"> [${escapeHtml(g.severity)} · ${escapeHtml(g.type)}]</span>
+      </div>
+      <div style="font-size:12px;margin:6px 0;">${escapeHtml(g.description)}</div>
+      <div style="font-size:12px;color:#555;"><strong>Suggested approach:</strong> ${escapeHtml(g.suggestedApproach)}</div>
+    </div>`).join('');
+ 
+  const fwHtml = fw.map(f => `<li style="margin-bottom:6px;font-size:12px;">
+      ${escapeHtml(f.direction)} <em style="color:#777;">(${escapeHtml(f.timeframe||'')} · ${f.source==='explicit'?'from paper':'AI inferred'})</em>
+    </li>`).join('');
+ 
+  const rqHtml = rqs.map((rq,i) => `
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:600;font-size:13px;">${i+1}. ${escapeHtml(rq.question)}</div>
+      <div style="font-size:12px;color:#555;">${escapeHtml(rq.rationale)} ${rq.difficulty?`— <em>${escapeHtml(rq.difficulty)}</em>`:''}</div>
+    </div>`).join('');
+ 
+  const propHtml = propsArr.length ? propsArr.map(({gap, idx, p}) => `
+    <div style="margin-bottom:18px;padding:12px;border:1px solid #ddd;border-radius:6px;">
+      <div style="font-size:12px;text-transform:uppercase;color:#777;margin-bottom:4px;">Proposal for GAP ${String(idx+1).padStart(2,'0')} — ${escapeHtml(gap.title)}</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:8px;"><em>${escapeHtml(p.title)}</em></div>
+      <div style="font-size:12px;margin-bottom:6px;"><strong>Background:</strong> ${escapeHtml(p.background)}</div>
+      <div style="font-size:12px;margin-bottom:6px;"><strong>Objective:</strong> ${escapeHtml(p.objective)}</div>
+      <div style="font-size:12px;margin-bottom:6px;"><strong>Hypotheses:</strong><ul>${(p.hypotheses||[]).map(h=>`<li>${escapeHtml(h)}</li>`).join('')}</ul></div>
+      <div style="font-size:12px;margin-bottom:6px;"><strong>Methodology:</strong> ${escapeHtml(p.methodology)}</div>
+      <div style="font-size:12px;margin-bottom:6px;"><strong>Expected Outcomes:</strong> ${escapeHtml(p.expectedOutcomes)}</div>
+      <div style="font-size:12px;margin-bottom:6px;"><strong>Timeline:</strong> ${escapeHtml(p.timeline)}</div>
+      <div style="font-size:12px;"><strong>Potential Challenges:</strong> ${escapeHtml(p.potentialChallenges)}</div>
+    </div>`).join('') : '<p style="font-size:12px;color:#777;">No proposals generated yet — visit the Proposal Generator tab first.</p>';
+ 
+  return `
+  <div style="font-family: Georgia, serif; color:#111; max-width:720px;">
+    <h1 style="font-size:22px;margin-bottom:2px;">${escapeHtml((d.paperTitles||[]).join(' · ') || 'Research Gap Analysis Report')}</h1>
+    <div style="font-size:11px;color:#777;margin-bottom:20px;">Generated by ResearchLens · ${new Date().toLocaleDateString()}</div>
+ 
+    <h2 style="font-size:16px;border-bottom:2px solid #111;padding-bottom:4px;margin-top:24px;">Summary</h2>
+    <p style="font-size:13px;line-height:1.7;">${escapeHtml(s.overview)}</p>
+    <div style="font-size:13px;font-weight:700;margin-top:10px;">Key Claims</div>
+    <ul style="font-size:12px;">${claimsHtml}</ul>
+    <div style="font-size:13px;font-weight:700;margin-top:10px;">Methodology</div>
+    <p style="font-size:12px;">${escapeHtml(s.methodology)}</p>
+    <div style="font-size:13px;font-weight:700;margin-top:10px;">Limitations</div>
+    <p style="font-size:12px;">${escapeHtml(s.limitations)}</p>
+ 
+    <h2 style="font-size:16px;border-bottom:2px solid #111;padding-bottom:4px;margin-top:28px;">Research Gaps (${gaps.length})</h2>
+    ${gapsHtml}
+    ${oppHtml ? `<div style="font-size:13px;font-weight:700;margin-top:10px;">Future Opportunities</div><ul style="font-size:12px;">${oppHtml}</ul>` : ''}
+ 
+    <h2 style="font-size:16px;border-bottom:2px solid #111;padding-bottom:4px;margin-top:28px;">Future Work Directions</h2>
+    <ul>${fwHtml}</ul>
+ 
+    <h2 style="font-size:16px;border-bottom:2px solid #111;padding-bottom:4px;margin-top:28px;">Research Questions</h2>
+    ${rqHtml}
+ 
+    <h2 style="font-size:16px;border-bottom:2px solid #111;padding-bottom:4px;margin-top:28px;">Research Proposals</h2>
+    ${propHtml}
+  </div>`;
+}
+ 
+async function downloadPdf() {
+  if (!analysisData) return;
+  dlBtn.disabled = true; dlBtn.textContent = 'Preparing PDF…';
+  try {
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
+    const wrap = document.createElement('div');
+    wrap.style.padding = '24px';
+    wrap.innerHTML = buildReportHTML(analysisData);
+    document.body.appendChild(wrap);
+    await window.html2pdf().set({
+      margin: 12,
+      filename: 'research-gap-report.pdf',
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(wrap).save();
+    wrap.remove();
+  } catch(e) {
+    alert('PDF export failed: ' + e.message);
+  } finally {
+    dlBtn.disabled = false; dlBtn.textContent = '⬇ Download Report';
+  }
+}
+ 
+async function downloadDocx() {
+  if (!analysisData) return;
+  dlBtn.disabled = true; dlBtn.textContent = 'Preparing Word doc…';
+  try {
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
+    await loadScriptOnce('https://unpkg.com/html-docx-js/dist/html-docx.js');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${buildReportHTML(analysisData)}</body></html>`;
+    const blob = window.htmlDocx.asBlob(html);
+    window.saveAs(blob, 'research-gap-report.docx');
+  } catch(e) {
+    alert('Word export failed: ' + e.message);
+  } finally {
+    dlBtn.disabled = false; dlBtn.textContent = '⬇ Download Report';
+  }
+}
+ 
+document.getElementById('dlPdfBtn').addEventListener('click', () => { dlMenu.classList.remove('open'); downloadPdf(); });
+document.getElementById('dlDocxBtn').addEventListener('click', () => { dlMenu.classList.remove('open'); downloadDocx(); });
  
 // ════════════════════════════════
 // PDF TEXT EXTRACTION (PDF.js)
